@@ -38,8 +38,8 @@ Sistem Persuratan & Digitalisasi Arsip adalah aplikasi web modern untuk mengelol
 
 ## 🚀 Cara Membuka
 
-1. **Beranda publik:** `index.html` dapat dibuka di browser modern untuk melihat tampilan publik.
-2. **Login admin:** buka aplikasi melalui deployment Web App Google Apps Script. Login admin tidak tersedia dari file HTML lokal.
+1. **Beranda publik:** [surat2.zoom-fk.workers.dev](https://surat2.zoom-fk.workers.dev/) menyajikan landing page publik.
+2. **Login admin:** pilih **Masuk admin** lalu lanjutkan melalui tautan portal Google Apps Script. Autentikasi dan sesi admin tetap ditangani Apps Script, bukan Cloudflare atau file HTML lokal.
 3. **Mode responsif:**
    - Desktop: Sidebar penuh + tabel berkolom banyak
    - Tablet/Mobile: Sidebar collapsible, tabel responsive

@@ -1222,6 +1222,18 @@
 			margin-top: 10px;
 		}
 
+		.login-portal-note {
+			margin: 0 0 16px;
+			color: var(--muted);
+		}
+
+		.login-portal-link {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-decoration: none;
+		}
+
 		.login-error {
 			color: var(--coral);
 			margin: 12px 0 0;
@@ -3594,20 +3606,28 @@
 			</div>
 			<h1>Selamat datang kembali</h1>
 			<p>Pilih akun admin sesuai tugas Anda.</p>
-			<div class="field"><label for="adminRole">Jenis akun admin</label><select id="adminRole" required>
-					<option value="">Pilih akses admin</option>
-					<option value="incoming">Login Admin Surat Masuk</option>
-					<option value="outgoing">Login Admin Surat Keluar</option>
-					<option value="distribution">Login Admin Distribusi Surat</option>
-					<option value="super">Login Super Admin</option>
-				</select></div>
-			<div class="field"><label for="username">Nama pengguna</label><input id="username" autocomplete="username"
-					placeholder="Pilih jenis akun admin" readonly required></div>
-			<div class="field password-field"><label for="password">Kata sandi</label><input id="password"
-					type="password" autocomplete="current-password" placeholder="Masukkan kata sandi admin" required><button
-					class="password-toggle" type="button" id="togglePassword" aria-label="Tampilkan kata sandi"
-					aria-pressed="false">◉</button></div>
-			<button class="primary-btn" type="submit">Masuk <span>→</span></button>
+			<div id="loginPortalPrompt" hidden>
+				<p class="login-portal-note">Beranda publik menggunakan Cloudflare. Untuk menjaga autentikasi admin,
+					lanjutkan login melalui Web App Google Apps Script.</p>
+				<a class="primary-btn login-portal-link" id="appsScriptPortalLink" target="_blank"
+					rel="noopener noreferrer">Lanjut ke portal admin <span>&nbsp;→</span></a>
+			</div>
+			<div id="loginCredentials">
+				<div class="field"><label for="adminRole">Jenis akun admin</label><select id="adminRole" required>
+						<option value="">Pilih akses admin</option>
+						<option value="incoming">Login Admin Surat Masuk</option>
+						<option value="outgoing">Login Admin Surat Keluar</option>
+						<option value="distribution">Login Admin Distribusi Surat</option>
+						<option value="super">Login Super Admin</option>
+					</select></div>
+				<div class="field"><label for="username">Nama pengguna</label><input id="username"
+						autocomplete="username" placeholder="Pilih jenis akun admin" readonly required></div>
+				<div class="field password-field"><label for="password">Kata sandi</label><input id="password"
+						type="password" autocomplete="current-password" placeholder="Masukkan kata sandi admin"
+						required><button class="password-toggle" type="button" id="togglePassword"
+						aria-label="Tampilkan kata sandi" aria-pressed="false">◉</button></div>
+				<button class="primary-btn" type="submit">Masuk <span>→</span></button>
+			</div>
 			<div class="login-error" id="loginError">Nama pengguna atau kata sandi belum sesuai.</div>
 		</form>
 	</section>
@@ -4111,7 +4131,21 @@
 	</div>
 	<script>
 		// Set this after deploying Code.gs as a Web App.
-		const APP_SCRIPT_URL = localStorage.getItem('suratika_app_script_url') || 'https://script.google.com/macros/s/AKfycbzz42Zo1Auieas1Grsz7LTjYhcWxBdpTFxIOYVbQQsbmsYYHwo_M5LlioXDp4fTSiES/exec';
+		const DEFAULT_APP_SCRIPT_URL = 'https://script.google.com/a/macros/ar-raniry.ac.id/s/AKfycbxsldn4fZkWKogl1qe4yhja9GzRaNo6BoVkUO1X0zU-TaT7TFsLUlERrAb6eubdnohF/exec';
+		const previousDefaultAppScriptUrl = 'https://script.google.com/macros/s/AKfycbzz42Zo1Auieas1Grsz7LTjYhcWxBdpTFxIOYVbQQsbmsYYHwo_M5LlioXDp4fTSiES/exec';
+		const configuredAppScriptUrl = localStorage.getItem('suratika_app_script_url');
+		const APP_SCRIPT_URL = configuredAppScriptUrl && configuredAppScriptUrl !== previousDefaultAppScriptUrl
+			? configuredAppScriptUrl
+			: DEFAULT_APP_SCRIPT_URL;
+		if (configuredAppScriptUrl === previousDefaultAppScriptUrl) {
+			localStorage.setItem('suratika_app_script_url', DEFAULT_APP_SCRIPT_URL);
+		}
+		const isAppsScriptRuntime = Boolean(window.google && google.script && google.script.run);
+		if (!isAppsScriptRuntime) {
+			document.getElementById('loginCredentials').hidden = true;
+			document.getElementById('loginPortalPrompt').hidden = false;
+			document.getElementById('appsScriptPortalLink').href = APP_SCRIPT_URL;
+		}
 		let activeAdminRole = '';
 		let adminSessionToken = '';
 		let adminSessionExpiresAt = 0;
@@ -4383,8 +4417,8 @@
 				error.style.display = 'block';
 				return;
 			}
-			if (!window.google || !google.script || !google.script.run) {
-				error.textContent = 'Login admin hanya tersedia melalui Web App Google Apps Script.';
+			if (!isAppsScriptRuntime) {
+				error.textContent = 'Lanjutkan login melalui tautan portal admin Google Apps Script.';
 				error.style.display = 'block';
 				return;
 			}

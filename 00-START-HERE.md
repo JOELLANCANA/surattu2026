@@ -104,10 +104,12 @@ mengetahuinya dapat memilih Super Admin. Hak baca-saja distribusi hanya berlaku
 untuk sesi yang masuk menggunakan peran distribusi.
 
 
-Login admin hanya tersedia saat aplikasi dibuka melalui deployment Web App
-Google Apps Script. Sesi berlaku hingga 6 jam. Super Admin memiliki akses ke
-semua halaman dan tindakan administrasi yang saat ini didukung. Akun distribusi
-hanya memiliki akses baca ke halaman distribusi.
+Beranda publik tersedia di https://surat2.zoom-fk.workers.dev/. Pada beranda
+Cloudflare, tombol login mengarahkan admin ke deployment Web App Google Apps
+Script; masukkan kata sandi hanya di portal tersebut. Autentikasi dan sesi tetap
+ditangani server Apps Script. Sesi berlaku hingga 6 jam. Super Admin memiliki
+akses ke semua halaman dan tindakan administrasi yang saat ini didukung. Akun
+distribusi hanya memiliki akses baca ke halaman distribusi.
 
 ### How to Login
 ```
