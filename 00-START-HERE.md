@@ -52,11 +52,10 @@
 ## 🎨 Features
 
 ### Admin Panel
-- [x] Login dengan password (default: 1122)
-- [x] Customize branding (header, hero, footer)
-- [x] Manage pengirim dan tujuan surat
-- [x] Lihat statistik real-time
-- [x] Export data ke CSV
+- [x] Login terpisah untuk admin surat masuk, surat keluar, distribusi, dan Super Admin
+- [x] Akses halaman dibatasi berdasarkan jenis akun
+- [x] Admin distribusi hanya mendapat akses baca
+- [x] Super Admin dapat mengakses semua halaman dan tindakan administrasi
 
 ### User Features
 - [x] Dashboard dengan analytics
@@ -71,63 +70,52 @@
 
 ## 📋 Navigation
 
-### 10 Pages Available
+### Halaman Admin
 
-```
-1. 📊 Dashboard
-   → Statistics, charts, recent activity
-
-2. 📂 Arsip Surat
-   → View all letters, search, filter, print
-
-3. 📥 Input Masuk
-   → Add new incoming letters
-
-4. 📤 Input Keluar
-   → Add new outgoing letters
-
-5. 🔄 Distribusi
-   → Track letter distribution
-
-6. 📋 Laporan
-   → Generate reports & statistics
-
-7. 🌐 Arsip Publik
-   → Public view (no admin access)
-
-8. ⚙️ Panel Admin
-   → Customization & settings (login required)
-
-9. 📊 Master Data
-   → Manage pengirim/tujuan lists
-
-10. ℹ️ Tentang
-    → About application
-```
+Halaman yang muncul bergantung pada akun yang dipilih. Admin surat masuk
+mengelola surat masuk dan arsip surat masuk; admin surat keluar mengelola surat
+keluar dan arsip surat keluar; admin distribusi hanya membaca halaman
+distribusi. Super Admin dapat mengakses seluruh halaman dan tindakan
+administrasi yang tersedia.
 
 ---
 
 ## 🔐 Admin Access
 
-### Login Credentials
-```
-Password: 1122
-```
+### Login Admin
 
-### Admin Functions
-- Customize header/footer
-- Change hero section colors
-- Edit master data (Pengirim/Tujuan)
-- View all admin settings
-- Export settings
+Akun admin memiliki nama pengguna tetap:
+
+| Akses | Nama pengguna |
+|---|---|
+| Login Admin Surat Masuk | `admin_masuk` |
+| Login Admin Surat Keluar | `admin_keluar` |
+| Login Admin Distribusi Surat | `admin_distribusi` |
+| Login Super Admin | `super_admin` |
+
+Jalankan fungsi `setup()` di Apps Script untuk membuat tab **Admin Login** di
+Spreadsheet utama. Isi kolom `password` pada setiap baris akun, lalu deploy
+versi terbaru sebagai Web App. Nilai sandi dibaca server dan tidak dikirim ke
+halaman publik. Batasi akses Spreadsheet kepada pengelola tepercaya.
+
+Untuk konfigurasi awal yang diminta, isikan sandi yang sama pada keempat akun.
+Perlu diketahui, sandi bersama tidak membatasi pemilihan peran: siapa pun yang
+mengetahuinya dapat memilih Super Admin. Hak baca-saja distribusi hanya berlaku
+untuk sesi yang masuk menggunakan peran distribusi.
+
+
+Login admin hanya tersedia saat aplikasi dibuka melalui deployment Web App
+Google Apps Script. Sesi berlaku hingga 6 jam. Super Admin memiliki akses ke
+semua halaman dan tindakan administrasi yang saat ini didukung. Akun distribusi
+hanya memiliki akses baca ke halaman distribusi.
 
 ### How to Login
 ```
 1. Click "🔒 Login" button (top right)
-2. Enter password: 1122
-3. Click "🔓 Masuk"
-4. ✅ Admin mode activated
-5. Go to "⚙️ Panel Admin"
+2. Choose one of the four admin login options
+3. Enter the selected account's password
+4. Click "Masuk"
+5. The workspace opens with access limited to that account's role
 ```
 
 ---
@@ -225,32 +213,24 @@ Solution: Export to CSV before closing browser
 5. Click "Print" to print both sides
 ```
 
-### Customize Branding
-```
-1. Login (password: 1122)
-2. Go to "⚙️ Panel Admin"
-3. Edit header/footer text
-4. Change hero section color
-5. Click "💾 Simpan..."
-6. ✅ Settings auto-save
-```
+### Catatan Pengaturan
+
+Pengaturan branding dan sistem tidak termasuk dalam tiga akun admin yang
+tersedia. Perubahan data admin memerlukan sesi Web App yang masih aktif.
 
 ---
 
 ## 🌐 Offline Capability
 
 ### Works Without Internet
-- ✅ View all letters
-- ✅ Search documents
-- ✅ Input new data
-- ✅ Print documents
-- ✅ Export to CSV
-- ✅ Customize settings
+- ✅ View cached public information
+- ✅ Search documents already loaded in the browser
+- ✅ Print documents and export loaded data
 
 ### Cannot Do (Without Internet)
-- ❌ Send emails
+- ❌ Admin login and authenticated changes
+- ❌ Load current server data or sync changes
 - ❌ Upload to cloud
-- ❌ Sync with other devices
 
 ---
 
@@ -356,9 +336,10 @@ Solution:
 ### Admin login not working
 ```
 Solution:
-1. Password is: 1122 (without quotes)
-2. Check keyboard layout (numbers only)
-3. Clear browser cookies
+1. Open the deployed Google Apps Script Web App, not the local HTML file
+2. Check that the matching password Script Property is configured
+3. Confirm the selected role and its username, then retry
+4. Deploy the latest Code.gs version and refresh the Web App
 ```
 
 ### Print not working
@@ -425,13 +406,10 @@ Solution:
 - [x] No external tracking
 - [x] No third-party services
 
-### Default Password
-```
-Password: 1122
+### Admin credentials
 
-Change recommended after deployment
-Edit in JavaScript code (search for password check)
-```
+There is no default password. Set the three role-specific password values in
+Apps Script Script Properties; do not edit or store passwords in `index.html`.
 
 ---
 
@@ -459,7 +437,8 @@ Edit in JavaScript code (search for password check)
 **A:** Yes, edit index.html with text editor.
 
 ### Q: What if password forgotten?
-**A:** Edit password in JavaScript code (line ~2340)
+**A:** Set a new value for the matching admin password in Apps Script Script
+Properties, then use the new password at the next login.
 
 ---
 
@@ -539,8 +518,8 @@ Surat-Masuk-2026-09-08.csv
 
 3. **Customize Branding** (Optional)
    ```
-   Login with password: 1122
-   Go to Admin Panel
+   Login with the relevant admin account
+   Go to its role-specific page
    Edit header/footer
    Save settings
    ```

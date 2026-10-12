@@ -4,12 +4,11 @@
 
 Fitur baru memungkinkan admin untuk mengakses langsung Google Spreadsheet dan Google Drive dari halaman **Surat Masuk** dan **Surat Keluar**. Tombol akan muncul otomatis di samping tombol "Catat surat baru".
 
-## 🔐 Kredensial Admin
+## 🔐 Akses Admin
 
-```
-Username: admin
-Password: 1122
-```
+Akses spreadsheet tersedia untuk akun admin surat masuk dan surat keluar.
+Gunakan opsi login yang sesuai; nama pengguna dan kata sandi dikonfigurasi
+terpisah melalui Script Properties Apps Script.
 
 ## 📍 Lokasi Fitur
 
@@ -30,7 +29,7 @@ Password: 1122
 
 ### 1. Buka Halaman Surat Masuk
 ```
-1. Login dengan username: admin, password: 1122
+1. Pilih "Login Admin Surat Masuk" dan masukkan kata sandi akun
 2. Klik menu sidebar: "↓ Surat masuk"
 3. Perhatikan 2 tombol baru di sebelah "Catat surat baru":
    - 📊 Buka Sheet
@@ -137,12 +136,12 @@ document.querySelectorAll('.nav-item[data-view]')
 ✅ **One-Click Access** - Akses langsung ke Google Apps  
 ✅ **New Tab** - Tidak mengganggu aplikasi (buka di tab baru)  
 ✅ **Mobile Responsive** - Bekerja di semua ukuran layar  
-✅ **Admin Friendly** - Password mudah diingat (1122)  
+✅ **Role Specific** - Login admin terpisah untuk surat masuk dan surat keluar  
 ✅ **Integrated** - Menggunakan ID dari Code.gs  
 
 ## 📋 Checklist Penggunaan
 
-- [ ] Sudah login dengan username: `admin`, password: `1122`
+- [ ] Sudah login dengan akun admin yang sesuai
 - [ ] Halaman "Surat masuk" menampilkan 2 tombol baru
 - [ ] Halaman "Surat keluar" menampilkan 2 tombol baru
 - [ ] Klik "📊 Buka Sheet" membuka Google Spreadsheet
