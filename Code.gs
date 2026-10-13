@@ -292,15 +292,17 @@ function readLetterSheet_(sheetName, type) {
   const sheet = findSheetByName_(spreadsheet, sheetName);
   if (!sheet || sheet.getLastRow() < 2) return [];
   const values = sheet.getDataRange().getValues();
-  const headers = values.shift() || [];
-  return values.filter(row => row.some(value => String(value).trim())).map(row => {
+  const headers = values[0] || [];
+  return values.slice(1).flatMap((row, index) => {
+    if (!row.some(value => String(value).trim())) return [];
     const item = headers.reduce((record, header, index) => {
       record[header] = row[index];
       return record;
     }, {});
     item.type = type;
     item.sourceSheet = sheet.getName();
-    return item;
+    item.sourceRow = index + 2;
+    return [item];
   });
 }
 

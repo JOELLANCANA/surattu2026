@@ -3184,6 +3184,53 @@
 		function applyHeroImages(sources) { const urls = [...new Set((sources || []).filter(Boolean))]; if (heroSliderTimer) clearInterval(heroSliderTimer); heroSliderUrls = urls; heroSliderIndex = 0; const hero = document.getElementById('heroArt'); const dots = document.getElementById('heroSliderDots'); dots.innerHTML = urls.map((url, index) => `<i class="${index === 0 ? 'active' : ''}" data-slide="${index}"></i>`).join(''); if (!urls.length) { hero.classList.remove('has-image'); return; } hero.classList.add('has-image'); const showSlide = index => { heroSliderIndex = index; const candidates = heroImageCandidates(urls[index]); hero.style.backgroundImage = `url("${candidates[0]}")`; const probe = new Image(); probe.onload = () => { hero.style.backgroundImage = `url("${candidates[0]}")`; }; probe.onerror = () => { if (candidates[1]) hero.style.backgroundImage = `url("${candidates[1]}")`; }; probe.src = candidates[0]; dots.querySelectorAll('i').forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === index)); }; showSlide(0); dots.querySelectorAll('i').forEach(dot => dot.addEventListener('click', () => showSlide(Number(dot.dataset.slide)))); if (urls.length > 1) heroSliderTimer = setInterval(() => showSlide((heroSliderIndex + 1) % urls.length), 4500); }
 		async function loadHeroSliderFromServer() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&hero=1&t=${Date.now()}`); const result = await response.json(); const urls = result.heroImageUrls || (result.heroImageUrl ? [result.heroImageUrl] : []); if (urls.length) { localStorage.setItem('suratika_hero_images', JSON.stringify(urls)); localStorage.setItem('suratika_hero_image', urls[0]); applyHeroImages(urls); } } catch (error) { console.warn('Hero slider sync failed', error); } }
 		function applyFooterInfo(content) { const value = String(content || '').trim() || 'Informasi layanan administrasi surat UIN Ar-Raniry Banda Aceh.'; document.getElementById('publicFooterInfo').textContent = value; document.getElementById('publicFooterYear').textContent = new Date().getFullYear(); const input = document.getElementById('footerInfoInput'); if (input) input.value = value; }
+		function setupSupabaseMirrorSettings() {
+			const grid = document.querySelector('#settingsPanel .settings-grid');
+			if (!grid || document.getElementById('supabaseMirrorSettingsCard')) return;
+
+			const card = document.createElement('div');
+			card.className = 'settings-card';
+			card.id = 'supabaseMirrorSettingsCard';
+			card.innerHTML = '<h3>Mirror Supabase</h3><p>Google Spreadsheet tetap menjadi sumber utama. Jalankan SQL dari supabase/schema.sql di Supabase, lalu gunakan sinkronisasi manual untuk menyalin daftar surat terbaru.</p><div class="connection" id="supabaseMirrorStatus"><i></i> Memeriksa konfigurasi server</div><button class="primary-btn" id="syncSupabaseMirrorBtn" style="margin-top:12px">Sinkronkan Spreadsheet ke Supabase</button>';
+			grid.appendChild(card);
+
+			const status = document.getElementById('supabaseMirrorStatus');
+			const syncButton = document.getElementById('syncSupabaseMirrorBtn');
+			fetch('/api/supabase-sync', { cache: 'no-store' })
+				.then(response => response.json())
+				.then(result => {
+					status.classList.toggle('ok', result.configured === true);
+					status.innerHTML = `<i></i> ${result.configured ? 'Konfigurasi server tersedia' : 'Atur environment variable Vercel'}`;
+				})
+				.catch(error => {
+					console.error('Status Supabase tidak dapat diperiksa:', error);
+					status.textContent = 'Status Supabase tidak dapat diperiksa';
+				});
+
+			syncButton.addEventListener('click', async () => {
+				syncButton.disabled = true;
+				syncButton.textContent = 'Menyinkronkan...';
+				try {
+					const response = await fetch('/api/supabase-sync', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: '{}'
+					});
+					const result = await response.json();
+					if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+					status.classList.add('ok');
+					status.innerHTML = `<i></i> ${result.syncedRows} surat tersinkron`;
+					showToast(`${result.syncedRows} surat berhasil disinkronkan ke Supabase.`);
+				} catch (error) {
+					console.error('Sinkronisasi Supabase gagal:', error);
+					showToast(error.message || 'Sinkronisasi Supabase gagal.');
+				} finally {
+					syncButton.disabled = false;
+					syncButton.textContent = 'Sinkronkan Spreadsheet ke Supabase';
+				}
+			});
+		}
+		setupSupabaseMirrorSettings();
 		function setupFooterSettings() { const grid = document.querySelector('#settingsPanel .settings-grid'); if (!grid || document.getElementById('footerSettingsCard')) return; const card = document.createElement('div'); card.className = 'settings-card'; card.id = 'footerSettingsCard'; card.innerHTML = '<h3>Informasi footer Beranda Publik</h3><p>Isi informasi yang ditampilkan pada bagian bawah beranda publik.</p><textarea id="footerInfoInput" maxlength="500" placeholder="Tuliskan informasi layanan atau kontak..."></textarea><button class="primary-btn" id="saveFooterInfo" style="margin-top:12px">Simpan informasi</button>'; grid.appendChild(card); const saved = localStorage.getItem('suratika_footer_info'); if (saved) applyFooterInfo(saved); document.getElementById('saveFooterInfo').addEventListener('click', async () => { const content = document.getElementById('footerInfoInput').value.trim(); applyFooterInfo(content); localStorage.setItem('suratika_footer_info', content); const savedToServer = await syncToAppsScript({ action: 'saveFooterInfo', data: { content } }); showToast(savedToServer ? 'Informasi footer berhasil disimpan.' : 'Informasi tampil sementara. Penyimpanan server gagal.'); }); }
 		function updatePublicDistributionTotal() { const summary = document.getElementById('publicDistributionSummary'); if (!summary) return; let totalCard = document.getElementById('publicDistributionTotal'); if (!totalCard) { totalCard = document.createElement('div'); totalCard.id = 'publicDistributionTotal'; totalCard.className = 'public-distribution-summary-item total'; summary.prepend(totalCard); } const total = state.distributions.length; totalCard.innerHTML = `<strong>${total}</strong><span>Total seluruh distribusi</span>`; }
 		function setupPublicDistributionTotal() { const target = document.getElementById('publicDistributionRows'); if (!target) return; const observer = new MutationObserver(updatePublicDistributionTotal); observer.observe(target, { childList: true, subtree: true }); updatePublicDistributionTotal(); }
