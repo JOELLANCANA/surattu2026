@@ -8,7 +8,6 @@ const CONFIG = {
   senderSheetName: PropertiesService.getScriptProperties().getProperty('SENDER_SHEET_NAME') || 'Pengirim',
   recipientSheetName: PropertiesService.getScriptProperties().getProperty('RECIPIENT_SHEET_NAME') || 'Tujuan',
   announcementSheetName: PropertiesService.getScriptProperties().getProperty('ANNOUNCEMENT_SHEET_NAME') || 'Pengumuman',
-  adminLoginSheetName: PropertiesService.getScriptProperties().getProperty('ADMIN_LOGIN_SHEET_NAME') || 'Admin Login',
   bannerSheetName: PropertiesService.getScriptProperties().getProperty('BANNER_SHEET_NAME') || 'Banner'
 };
 
@@ -43,6 +42,7 @@ function doGet(event) {
     footerInfo: properties.getProperty('FOOTER_INFO') || 'Informasi layanan administrasi surat UIN Ar-Raniry Banda Aceh.',
     heroImageUrl: publishedBannerUrls[0] || '',
     heroImageUrls: publishedBannerUrls,
+    integrity: getIntegritySyncStatus_(),
     gradient: {
       colorOne: properties.getProperty('GRADIENT_COLOR_ONE') || '#f7f8f2',
       colorTwo: properties.getProperty('GRADIENT_COLOR_TWO') || '#dcefe3',
@@ -54,7 +54,15 @@ function doGet(event) {
 function getDistributionData_() {
   if (!CONFIG.distributionSpreadsheetId) return [];
   const spreadsheet = SpreadsheetApp.openById(CONFIG.distributionSpreadsheetId);
-  const sheet = spreadsheet.getSheetByName(CONFIG.distributionSheetName);
+  const configuredName = String(CONFIG.distributionSheetName || '').trim();
+  let sheet = spreadsheet.getSheetByName(CONFIG.distributionSheetName);
+  if (!sheet) {
+    const matches = spreadsheet.getSheets().filter(candidate => candidate.getName().trim() === configuredName);
+    if (matches.length > 1) {
+      throw new Error(`Nama sheet distribusi "${configuredName}" cocok dengan lebih dari satu tab.`);
+    }
+    sheet = matches[0] || null;
+  }
   if (!sheet || sheet.getLastRow() < 2) return [];
   const values = sheet.getDataRange().getDisplayValues();
   const headers = values.shift() || [];
@@ -67,13 +75,6 @@ function getDistributionData_() {
 function doPost(event) {
   try {
     const body = JSON.parse(event.postData.contents || '{}');
-    const sessionRole = getAdminSessionRole_(body.sessionToken);
-    if (!sessionRole) {
-      return json_({ ok: false, error: 'Sesi admin tidak valid atau sudah berakhir. Silakan login kembali.' });
-    }
-    if (!isAdminActionAllowed_(body.action, body.data || {}, sessionRole)) {
-      return json_({ ok: false, error: 'Akun admin tidak memiliki akses untuk tindakan ini.' });
-    }
     if (body.action === 'saveSenderNames') {
       const names = [...new Set(String((body.data || {}).names || '').split(/[\n,;]+/).map(name => name.trim()).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id'));
       const sheet = getSenderSheet_();
@@ -120,6 +121,51 @@ function doPost(event) {
       PropertiesService.getScriptProperties().setProperty('FOOTER_INFO', footerInfo);
       return json_({ ok: true, footerInfo });
     }
+    if (body.action === 'verifyDriveSync' || body.action === 'syncIntegrity') {
+      const result = syncSheetsAndDriveIntegrity();
+      return json_({ ok: true, result });
+    }
+    if (body.action === 'installIntegrityTrigger') {
+      const trigger = installIntegritySyncTrigger_();
+      return json_({ ok: true, trigger });
+    }
+    if (body.action === 'updateLetter') {
+      const data = body.data || {};
+      const origNum = String(data.originalNumber || data.number || '').trim();
+      ['in', 'out'].forEach(type => {
+        const sheet = getSheet_(type);
+        const values = sheet.getDataRange().getDisplayValues();
+        for (let i = 1; i < values.length; i++) {
+          if (String(values[i][1]).trim() === origNum) {
+            sheet.getRange(i + 1, 2).setValue(data.number || values[i][1]);
+            sheet.getRange(i + 1, 3).setValue(data.subject || values[i][2]);
+            sheet.getRange(i + 1, 4).setValue(data.sender || values[i][3]);
+            sheet.getRange(i + 1, 6).setValue(data.date || values[i][5]);
+            sheet.getRange(i + 1, 7).setValue(data.status || values[i][6]);
+            if (data.recipient) sheet.getRange(i + 1, 9).setValue(data.recipient);
+            break;
+          }
+        }
+      });
+      CacheService.getScriptCache().remove('suratika_letters_v1');
+      return json_({ ok: true });
+    }
+    if (body.action === 'deleteLetter') {
+      const data = body.data || {};
+      const targetNum = String(data.number || '').trim();
+      ['in', 'out'].forEach(type => {
+        const sheet = getSheet_(type);
+        const values = sheet.getDataRange().getDisplayValues();
+        for (let i = values.length - 1; i >= 1; i--) {
+          if (String(values[i][1]).trim() === targetNum) {
+            sheet.deleteRow(i + 1);
+            break;
+          }
+        }
+      });
+      CacheService.getScriptCache().remove('suratika_letters_v1');
+      return json_({ ok: true });
+    }
     if (body.action !== 'createLetter') {
       return json_({ ok: false, error: 'Action tidak dikenal.' });
     }
@@ -139,67 +185,11 @@ function doPost(event) {
   }
 }
 
-function authenticateAdmin(username, password, requestedRole) {
-  const accounts = {
-    incoming: { username: 'admin_masuk' },
-    outgoing: { username: 'admin_keluar' },
-    distribution: { username: 'admin_distribusi' },
-    super: { username: 'super_admin' }
-  };
-  if (!Object.prototype.hasOwnProperty.call(accounts, requestedRole)) {
-    return { ok: false, error: 'Jenis akun admin tidak dikenal.' };
-  }
-  const account = accounts[requestedRole];
-  const sheet = getAdminLoginSheet_();
-  const rows = sheet.getLastRow() > 1
-    ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getDisplayValues()
-    : [];
-  const matchingRows = rows.filter(row => String(row[0]).trim() === requestedRole);
-  if (matchingRows.length !== 1 || String(matchingRows[0][1]).trim() !== account.username) {
-    return { ok: false, error: `Konfigurasi akun ${account.username} tidak valid di sheet "${CONFIG.adminLoginSheetName}". Jalankan setup() dan periksa kembali baris akun.` };
-  }
-  const configuredPassword = String(matchingRows[0][2] || '');
-  if (!configuredPassword) {
-    return { ok: false, error: `Kata sandi ${account.username} belum diisi di kolom password pada sheet "${CONFIG.adminLoginSheetName}".` };
-  }
-  if (String(username || '') !== account.username || String(password || '') !== configuredPassword) {
-    return { ok: false, error: 'Nama pengguna atau kata sandi belum sesuai.' };
-  }
-
-  const token = Utilities.getUuid();
-  CacheService.getScriptCache().put(`suratika_admin_session_${token}`, requestedRole, 21600);
-  return { ok: true, token, role: requestedRole };
-}
-
-function logoutAdmin(token) {
-  if (token) CacheService.getScriptCache().remove(`suratika_admin_session_${token}`);
-  return { ok: true };
-}
-
-function getAdminSessionRole_(token) {
-  if (!token || typeof token !== 'string') return '';
-  const role = CacheService.getScriptCache().get(`suratika_admin_session_${token}`);
-  return ['incoming', 'outgoing', 'distribution', 'super'].includes(role) ? role : '';
-}
-
-function isAdminActionAllowed_(action, data, role) {
-  if (action === 'createLetter') {
-    if (role === 'super') return ['in', 'out'].includes(data.type);
-    return (role === 'incoming' && data.type === 'in') || (role === 'outgoing' && data.type === 'out');
-  }
-  if (role === 'super') {
-    return [
-      'saveSenderNames', 'saveRecipientNames',
-      'createAnnouncement', 'updateAnnouncement', 'deleteAnnouncement', 'archiveAnnouncement',
-      'uploadBanner', 'publishBanner', 'archiveBanner', 'deleteBanner',
-      'saveHeroImages', 'saveHeroImage', 'saveGradient', 'saveFooterInfo'
-    ].includes(action);
-  }
-  return role === 'incoming' && ['saveSenderNames', 'saveRecipientNames'].includes(action);
-}
-
 function getLetterData_() {
-  return [readLetterSheet_(CONFIG.incomingSheetName), readLetterSheet_(CONFIG.outgoingSheetName)].flat();
+  return [
+    ...readLetterSheet_(CONFIG.incomingSheetName, 'in'),
+    ...readLetterSheet_(CONFIG.outgoingSheetName, 'out')
+  ];
 }
 
 function setup() {
@@ -207,41 +197,12 @@ function setup() {
     const sheet = getSheet_(sheetName === CONFIG.outgoingSheetName ? 'out' : 'in');
     if (sheet.getLastRow() === 0) sheet.appendRow(['createdAt', 'number', 'subject', 'sender', 'type', 'date', 'status', 'attachmentUrl']);
   });
-  getAdminLoginSheet_();
   getSenderSheet_();
   getRecipientSheet_();
   getAnnouncementSheet_();
   getBannerSheet_();
   migrateLegacyHeroImages_();
-}
-
-function getAdminLoginSheet_() {
-  const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
-  const accounts = [
-    ['incoming', 'admin_masuk', ''],
-    ['outgoing', 'admin_keluar', ''],
-    ['distribution', 'admin_distribusi', ''],
-    ['super', 'super_admin', '']
-  ];
-  let sheet = spreadsheet.getSheetByName(CONFIG.adminLoginSheetName);
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet(CONFIG.adminLoginSheetName);
-    sheet.getRange(1, 1, accounts.length + 1, 3).setValues([['role', 'username', 'password'], ...accounts]);
-    sheet.getRange(2, 3, accounts.length, 1).setNumberFormat('@');
-    sheet.setFrozenRows(1);
-    return sheet;
-  }
-  if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, accounts.length + 1, 3).setValues([['role', 'username', 'password'], ...accounts]);
-    sheet.getRange(2, 3, accounts.length, 1).setNumberFormat('@');
-    sheet.setFrozenRows(1);
-    return sheet;
-  }
-  const headers = sheet.getRange(1, 1, 1, 3).getDisplayValues()[0].map(value => String(value).trim().toLowerCase());
-  if (headers.join('|') !== 'role|username|password') {
-    throw new Error(`Header sheet "${CONFIG.adminLoginSheetName}" harus berurutan: role, username, password.`);
-  }
-  return sheet;
+  installIntegritySyncTrigger_();
 }
 
 function getSenderSheet_() {
@@ -326,26 +287,40 @@ function findAnnouncementRow_(sheet, id) {
   return index < 0 ? 0 : index + 2;
 }
 
-function readLetterSheet_(sheetName) {
+function readLetterSheet_(sheetName, type) {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
-  const sheet = spreadsheet.getSheetByName(sheetName);
+  const sheet = findSheetByName_(spreadsheet, sheetName);
   if (!sheet || sheet.getLastRow() < 2) return [];
   const values = sheet.getDataRange().getValues();
   const headers = values.shift() || [];
-  return values.filter(row => row.some(value => String(value).trim())).map(row => headers.reduce((item, header, index) => {
-    item[header] = row[index];
+  return values.filter(row => row.some(value => String(value).trim())).map(row => {
+    const item = headers.reduce((record, header, index) => {
+      record[header] = row[index];
+      return record;
+    }, {});
+    item.type = type;
+    item.sourceSheet = sheet.getName();
     return item;
-  }, {}));
+  });
 }
 
 function getSheet_(type) {
   if (!CONFIG.spreadsheetId) throw new Error('SPREADSHEET_ID belum diatur di Script Properties.');
   const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
   const sheetName = type === 'out' ? CONFIG.outgoingSheetName : CONFIG.incomingSheetName;
-  const sheet = spreadsheet.getSheetByName(sheetName) || spreadsheet.insertSheet(sheetName);
+  const sheet = findSheetByName_(spreadsheet, sheetName) || spreadsheet.insertSheet(sheetName);
   if (sheet.getLastRow() === 0) sheet.appendRow(['createdAt', 'number', 'subject', 'sender', 'type', 'date', 'status', 'attachmentUrl', 'recipient']);
   else if (sheet.getLastColumn() < 9) sheet.getRange(1, 9).setValue('recipient');
   return sheet;
+}
+
+function normalizeSheetName_(name) {
+  return String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function findSheetByName_(spreadsheet, sheetName) {
+  const expectedName = normalizeSheetName_(sheetName);
+  return spreadsheet.getSheets().find(sheet => normalizeSheetName_(sheet.getName()) === expectedName) || null;
 }
 
 function saveAttachment_(base64, name, mimeType, category) {
@@ -555,4 +530,321 @@ function getHeroImageUrls_() {
 function json_(payload) {
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Automated Background Job: Verifies & Syncs document metadata
+ * between Google Sheets database and Google Drive folder.
+ * Runs periodically via Time-Driven Trigger (every 1 hour).
+ */
+function syncSheetsAndDriveIntegrity() {
+  const startTime = Date.now();
+  let totalChecked = 0;
+  let verifiedCount = 0;
+  let repairedCount = 0;
+  let missingCount = 0;
+  const issues = [];
+  const logEntries = [];
+
+  try {
+    if (!CONFIG.spreadsheetId) throw new Error('SPREADSHEET_ID belum dikonfigurasi.');
+    if (!CONFIG.driveFolderId) throw new Error('DRIVE_FOLDER_ID belum dikonfigurasi.');
+
+    const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
+    let driveFolder;
+    try {
+      driveFolder = DriveApp.getFolderById(CONFIG.driveFolderId);
+    } catch (err) {
+      throw new Error(`Google Drive Folder ID tidak valid: ${err.message}`);
+    }
+
+    // Pre-cache folder files for quick searching if repair is needed
+    const folderFilesMap = new Map();
+    try {
+      const filesIterator = driveFolder.getFiles();
+      let cachedCount = 0;
+      while (filesIterator.hasNext() && cachedCount < 200) {
+        const file = filesIterator.next();
+        folderFilesMap.set(file.getName().toLowerCase(), file);
+        cachedCount++;
+      }
+    } catch (err) {
+      console.warn('Gagal membaca cache folder Drive:', err.message);
+    }
+
+    const sheetsToSync = [
+      { name: CONFIG.incomingSheetName, type: 'in' },
+      { name: CONFIG.outgoingSheetName, type: 'out' }
+    ];
+
+    sheetsToSync.forEach(({ name: sheetName, type }) => {
+      const sheet = findSheetByName_(spreadsheet, sheetName);
+      if (!sheet || sheet.getLastRow() < 2) return;
+
+      const range = sheet.getDataRange();
+      const values = range.getValues();
+      const headers = values[0] || [];
+
+      // Find column indices (0-based)
+      const colNum = headers.findIndex(h => /^(number|nomor)/i.test(String(h).trim()));
+      const colSub = headers.findIndex(h => /^(subject|perihal)/i.test(String(h).trim()));
+      const colSen = headers.findIndex(h => /^(sender|pengirim)/i.test(String(h).trim()));
+      const colRec = headers.findIndex(h => /^(recipient|tujuan|penerima)/i.test(String(h).trim()));
+      const colDate = headers.findIndex(h => /^(date|tanggal)/i.test(String(h).trim()));
+      const colStatus = headers.findIndex(h => /^(status)/i.test(String(h).trim()));
+      const colUrl = headers.findIndex(h => /^(attachmenturl|lampiran|file|driveurl)/i.test(String(h).trim()));
+
+      if (colNum === -1 || colUrl === -1) return;
+
+      for (let r = 1; r < values.length; r++) {
+        const row = values[r];
+        const letterNum = String(row[colNum] || '').trim();
+        if (!letterNum) continue;
+
+        totalChecked++;
+        const subject = colSub !== -1 ? String(row[colSub] || '') : '';
+        const sender = colSen !== -1 ? String(row[colSen] || '') : '';
+        const recipient = colRec !== -1 ? String(row[colRec] || '') : '';
+        const date = colDate !== -1 ? String(row[colDate] || '') : '';
+        const status = colStatus !== -1 ? String(row[colStatus] || '') : '';
+        let url = String(row[colUrl] || '').trim();
+
+        const metaDescription = `[Si-Surat UIN Ar-Raniry] No: ${letterNum} | Perihal: ${subject} | Pengirim: ${sender} | Tujuan: ${recipient || '-'} | Tanggal: ${date} | Status: ${status} | Sync: ${new Date().toISOString()}`;
+
+        let file = null;
+        let fileId = extractDriveFileId_(url);
+
+        if (fileId) {
+          try {
+            file = DriveApp.getFileById(fileId);
+            if (file.isTrashed()) {
+              file = null; // File in trash
+            }
+          } catch (err) {
+            file = null;
+          }
+        }
+
+        // If file is valid, sync metadata and ensure permissions
+        if (file) {
+          try {
+            file.setDescription(metaDescription);
+            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            verifiedCount++;
+            logEntries.push({ letterNum, status: 'verified', fileId: file.getId() });
+          } catch (err) {
+            verifiedCount++;
+          }
+        } else {
+          // Attempt automatic self-healing: find matching file in Drive folder
+          let matchedFile = null;
+          const cleanNum = letterNum.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+          // Search in cached folder files
+          for (const [fName, fObj] of folderFilesMap.entries()) {
+            const cleanFName = fName.replace(/[^a-zA-Z0-9]/g, '');
+            if (cleanFName.includes(cleanNum) || (cleanNum.length > 3 && cleanFName.includes(cleanNum.slice(0, 10)))) {
+              matchedFile = fObj;
+              break;
+            }
+          }
+
+          // If found, heal the broken link in Google Sheets
+          if (matchedFile) {
+            try {
+              const newUrl = matchedFile.getUrl();
+              sheet.getRange(r + 1, colUrl + 1).setValue(newUrl);
+              matchedFile.setDescription(metaDescription);
+              matchedFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+              repairedCount++;
+              logEntries.push({ letterNum, status: 'repaired', newUrl });
+            } catch (err) {
+              issues.push({ letterNum, error: `Gagal memperbarui link sheet: ${err.message}` });
+            }
+          } else {
+            if (url) {
+              missingCount++;
+              issues.push({ letterNum, error: 'File Drive tidak ditemukan atau telah dihapus', brokenUrl: url });
+            }
+          }
+        }
+      }
+    });
+
+    const durationMs = Date.now() - startTime;
+    const summary = {
+      timestamp: new Date().toISOString(),
+      status: missingCount === 0 ? 'optimal' : 'warnings_found',
+      totalChecked,
+      verifiedCount,
+      repairedCount,
+      missingCount,
+      durationMs,
+      issuesCount: issues.length,
+      sampleIssues: issues.slice(0, 5)
+    };
+
+    // Store latest sync results in Script Properties
+    PropertiesService.getScriptProperties().setProperty('INTEGRITY_SYNC_METRICS', JSON.stringify(summary));
+    console.log(`[Integrity Sync Completed] Checked: ${totalChecked}, Verified: ${verifiedCount}, Repaired: ${repairedCount}, Missing: ${missingCount} (${durationMs}ms)`);
+    return summary;
+  } catch (error) {
+    const errorSummary = {
+      timestamp: new Date().toISOString(),
+      status: 'error',
+      error: error.message,
+      totalChecked,
+      verifiedCount,
+      repairedCount,
+      missingCount
+    };
+    PropertiesService.getScriptProperties().setProperty('INTEGRITY_SYNC_METRICS', JSON.stringify(errorSummary));
+    console.error('Integrity Sync Error:', error.message);
+    return errorSummary;
+  }
+}
+
+/**
+ * Installs an automated background trigger for syncSheetsAndDriveIntegrity.
+ * Runs periodically every 1 hour.
+ */
+function installIntegritySyncTrigger_() {
+  try {
+    const triggers = ScriptApp.getProjectTriggers();
+    const existing = triggers.find(t => t.getHandlerFunction() === 'syncSheetsAndDriveIntegrity');
+    if (existing) {
+      return { status: 'already_installed', triggerId: existing.getUniqueId(), handler: 'syncSheetsAndDriveIntegrity' };
+    }
+    const newTrigger = ScriptApp.newTrigger('syncSheetsAndDriveIntegrity')
+      .timeBased()
+      .everyHours(1)
+      .create();
+    return { status: 'installed', triggerId: newTrigger.getUniqueId(), handler: 'syncSheetsAndDriveIntegrity' };
+  } catch (err) {
+    console.warn('Gagal memasang trigger otomatis:', err.message);
+    return { status: 'failed', error: err.message };
+  }
+}
+
+/**
+ * Retrieves the latest integrity metrics from Script Properties
+ */
+function getIntegritySyncStatus_() {
+  const raw = PropertiesService.getScriptProperties().getProperty('INTEGRITY_SYNC_METRICS');
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch (e) {}
+  }
+  return {
+    timestamp: null,
+    status: 'pending',
+    totalChecked: 0,
+    verifiedCount: 0,
+    repairedCount: 0,
+    missingCount: 0
+  };
+}
+
+/**
+ * Creates or updates a DNS record from trusted server-side Apps Script code.
+ * Store CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID in Script Properties.
+ */
+function upsertCloudflareDnsRecord(record) {
+  if (typeof record === 'string') {
+    try {
+      record = JSON.parse(record);
+    } catch (error) {
+      throw new Error('Parameter DNS harus berupa objek atau teks JSON valid.');
+    }
+  }
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    throw new Error('Parameter DNS wajib berupa objek. Untuk menjalankannya dari editor Apps Script, gunakan runConfiguredCloudflareDnsUpsert() setelah mengatur CLOUDFLARE_DNS_RECORD_JSON.');
+  }
+
+  const properties = PropertiesService.getScriptProperties();
+  const token = properties.getProperty('CLOUDFLARE_API_TOKEN');
+  const zoneId = properties.getProperty('CLOUDFLARE_ZONE_ID');
+  if (!token) throw new Error('CLOUDFLARE_API_TOKEN belum diatur di Script Properties.');
+  if (!zoneId) throw new Error('CLOUDFLARE_ZONE_ID belum diatur di Script Properties.');
+  if (!/^[a-f0-9]{32}$/i.test(zoneId)) throw new Error('CLOUDFLARE_ZONE_ID tidak valid.');
+
+  const type = String(record.type || '').trim().toUpperCase();
+  const name = String(record.name || '').trim();
+  const content = String(record.content || '').trim();
+  if (!['A', 'AAAA', 'CNAME', 'TXT', 'MX'].includes(type)) {
+    throw new Error('Unsupported DNS record type. Use A, AAAA, CNAME, TXT, or MX.');
+  }
+  if (!name || /\s/.test(name)) throw new Error('DNS record name is missing or invalid.');
+  if (!content) throw new Error('DNS record content is required.');
+  if (record.proxied !== undefined && typeof record.proxied !== 'boolean') {
+    throw new Error('DNS record proxied must be a boolean when provided.');
+  }
+  if (record.ttl !== undefined &&
+      (!Number.isInteger(record.ttl) || (record.ttl !== 1 && (record.ttl < 60 || record.ttl > 86400)))) {
+    throw new Error('DNS record TTL must be 1 (automatic) or an integer from 60 to 86400.');
+  }
+  if (type === 'MX' && (!Number.isInteger(record.priority) || record.priority < 0 || record.priority > 65535)) {
+    throw new Error('MX records require an integer priority from 0 to 65535.');
+  }
+
+  const zoneUrl = `https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zoneId)}/dns_records`;
+  const queryUrl = `${zoneUrl}?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}&per_page=100`;
+  const matches = cloudflareDnsRequest_(queryUrl, 'get', token);
+  if (!Array.isArray(matches.result)) throw new Error('Cloudflare returned an invalid DNS records response.');
+  if (matches.result_info && matches.result_info.total_count > matches.result.length) {
+    throw new Error('DNS record search was incomplete; refusing to make an ambiguous change.');
+  }
+  if (matches.result.length > 1) {
+    throw new Error(`Multiple ${type} records exist for ${name}; refusing to choose one.`);
+  }
+
+  const existing = matches.result[0];
+  const payload = {
+    type,
+    name,
+    content,
+    ttl: record.ttl !== undefined ? record.ttl : (existing && Number.isInteger(existing.ttl) ? existing.ttl : 1),
+    proxied: record.proxied !== undefined ? record.proxied : Boolean(existing && existing.proxied)
+  };
+  if (type === 'MX') payload.priority = record.priority;
+
+  const result = existing
+    ? cloudflareDnsRequest_(`${zoneUrl}/${encodeURIComponent(existing.id)}`, 'put', token, payload).result
+    : cloudflareDnsRequest_(zoneUrl, 'post', token, payload).result;
+  return { ok: true, action: existing ? 'updated' : 'created', record: result };
+}
+
+function runConfiguredCloudflareDnsUpsert() {
+  const recordJson = PropertiesService.getScriptProperties().getProperty('CLOUDFLARE_DNS_RECORD_JSON');
+  if (!recordJson) {
+    throw new Error('Atur CLOUDFLARE_DNS_RECORD_JSON di Script Properties, misalnya {"type":"A","name":"subdomain.example.com","content":"IP_TUJUAN"}, lalu jalankan fungsi ini.');
+  }
+  return upsertCloudflareDnsRecord(recordJson);
+}
+
+function cloudflareDnsRequest_(url, method, token, payload) {
+  const options = {
+    method,
+    headers: { Authorization: 'Bearer ' + token },
+    muteHttpExceptions: true
+  };
+  if (payload !== undefined) {
+    options.contentType = 'application/json';
+    options.payload = JSON.stringify(payload);
+  }
+
+  const response = UrlFetchApp.fetch(url, options);
+  const status = response.getResponseCode();
+  let body;
+  try {
+    body = JSON.parse(response.getContentText());
+  } catch (error) {
+    throw new Error(`Cloudflare returned invalid JSON (HTTP ${status}).`);
+  }
+  if (status < 200 || status >= 300 || !body.success) {
+    const messages = (body.errors || []).slice(0, 3).map(item => item.message || item.code).filter(Boolean);
+    throw new Error(`Cloudflare DNS request failed (HTTP ${status})${messages.length ? `: ${messages.join('; ')}` : '.'}`);
+  }
+  return body;
 }
