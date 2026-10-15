@@ -685,6 +685,25 @@
 		.archive-search input { width: 100%; min-height: 43px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 7px; background: white; outline: none; font-size: 14px; }
 		.public-distribution { margin-top: 34px; padding: 28px; border: 1px solid var(--line); border-radius: 10px; background: white; box-shadow: 0 14px 35px rgba(13,74,58,.06); scroll-margin-top: 86px; }
 		.public-distribution .distribution-list { padding: 0; }
+		.schedule-public-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 18px; }
+		.schedule-public-card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+		.schedule-public-card h3 { margin: 0 0 8px; font-size: 15px; }
+		.schedule-public-card p { margin: 4px 0; color: var(--muted); font-size: 12px; }
+		.schedule-empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; }
+		.schedule-admin-layout { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 18px; }
+		.schedule-admin-form { display: grid; gap: 12px; }
+		.schedule-admin-form .field { margin: 0; }
+		.schedule-admin-form textarea, .schedule-room-setting textarea { width: 100%; min-height: 100px; padding: 11px; border: 1px solid var(--line); border-radius: 7px; font: inherit; resize: vertical; }
+		.schedule-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+		.schedule-table th, .schedule-table td { padding: 11px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; }
+		.schedule-table th { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+		.schedule-status { display: inline-flex; padding: 4px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: capitalize; }
+		.schedule-status.approved { color: #176b4a; background: #e7f5ec; }
+		.schedule-status.pending { color: #925b0a; background: #fff4d6; }
+		.schedule-status.rejected { color: #a33131; background: #fdeaea; }
+		.schedule-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+		.schedule-actions button { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); cursor: pointer; font-size: 11px; }
+		@media (max-width: 800px) { .schedule-admin-layout { grid-template-columns: 1fr; } }
 		.public-distribution .distribution-month-toggle { padding: 14px 16px; }
 		.public-distribution .latest-distribution-table { min-width: 760px; }
 		.public-distribution-note { margin: 5px 0 20px; color: var(--muted); font-size: 13px; }
@@ -910,6 +929,7 @@
 				<a href="#lacak" class="public-drawer-link"><span class="icon">🔍</span> Lacak Surat Cepat</a>
 				<a href="#alur" class="public-drawer-link"><span class="icon">🔄</span> Alur Kerja Digital</a>
 				<a href="#publicArchive" class="public-drawer-link"><span class="icon">▦</span> Arsip Dokumen</a>
+				<a href="#jadwalPublik" class="public-drawer-link"><span class="icon">▦</span> Jadwal Kegiatan</a>
 				<a href="#distribusi" class="public-drawer-link"><span class="icon">⇢</span> Distribusi Surat</a>
 				<a href="#ekosistem" class="public-drawer-link"><span class="icon">🌐</span> Ekosistem Kampus</a>
 				<a href="#faq" class="public-drawer-link"><span class="icon">❓</span> Tanya Jawab (FAQ)</a>
@@ -1170,6 +1190,12 @@
 				</div>
 			</div>
 
+			<section class="public-distribution" id="jadwalPublik">
+				<h2>Jadwal Kegiatan Harian</h2>
+				<p class="public-distribution-note">Agenda yang telah disetujui dan pemakaian gedung/ruang kampus.</p>
+				<div class="schedule-public-list" id="publicScheduleRows"><div class="schedule-empty">Memuat jadwal kegiatan...</div></div>
+			</section>
+
 			<section class="public-distribution" id="distribusi">
 				<h2>Distribusi Surat Terbaru</h2>
 				<p class="public-distribution-note">10 distribusi aktif terbaru dari sheet Distribusi, dikelompokkan berdasarkan bulan.</p>
@@ -1310,33 +1336,33 @@
 			<button class="login-close" type="button" id="closeLogin" aria-label="Tutup login">×</button>
 			<div class="brand"><div class="brand-mark">S</div><div><div class="brand-name">si<span>surat</span></div><small class="institution-name">UIN Ar-Raniry Banda Aceh</small></div></div>
 			<h1>Ruang Admin Multi-Akun</h1>
-			<p>Pilih peran admin atau masukkan kredensial akun tugas Anda.</p>
+			<p>Pilih peran, lalu masukkan kredensial yang telah dikonfigurasi pada Vercel.</p>
 			
 			<div class="login-role-selector">
 				<span class="login-role-title">Pilih Cepat Akun / Peran Admin:</span>
 				<div class="login-role-grid">
-					<button type="button" class="login-role-chip active" data-role-user="superadmin" data-role-pass="1122" data-role-id="super_admin">
+					<button type="button" class="login-role-chip active" data-role-user="superadmin" data-role-id="super_admin">
 						<span class="role-icon">👑</span>
 						<div class="role-text">
 							<strong>Super Admin</strong>
 							<small>Kelola Semua Modul</small>
 						</div>
 					</button>
-					<button type="button" class="login-role-chip" data-role-user="adminsuratmasuk" data-role-pass="1122" data-role-id="admin_incoming">
+					<button type="button" class="login-role-chip" data-role-user="adminsuratmasuk" data-role-id="admin_incoming">
 						<span class="role-icon">📥</span>
 						<div class="role-text">
 							<strong>Admin Surat Masuk</strong>
 							<small>Khusus Surat Masuk</small>
 						</div>
 					</button>
-					<button type="button" class="login-role-chip" data-role-user="adminsuratkeluar" data-role-pass="1122" data-role-id="admin_outgoing">
+					<button type="button" class="login-role-chip" data-role-user="adminsuratkeluar" data-role-id="admin_outgoing">
 						<span class="role-icon">📤</span>
 						<div class="role-text">
 							<strong>Admin Surat Keluar</strong>
 							<small>Khusus Surat Keluar</small>
 						</div>
 					</button>
-					<button type="button" class="login-role-chip" data-role-user="admindistribusi" data-role-pass="1122" data-role-id="admin_distribution">
+					<button type="button" class="login-role-chip" data-role-user="admindistribusi" data-role-id="admin_distribution">
 						<span class="role-icon">⇢</span>
 						<div class="role-text">
 							<strong>Admin Distribusi</strong>
@@ -1350,7 +1376,7 @@
 			</div>
 
 			<div class="field"><label for="username">Nama pengguna / Akun</label><input id="username" autocomplete="username" value="superadmin" placeholder="superadmin / adminsuratmasuk / ..." required></div>
-			<div class="field password-field"><label for="password">Kata sandi</label><input id="password" type="password" autocomplete="current-password" value="1122" placeholder="••••••••" required><button class="password-toggle" type="button" id="togglePassword" aria-label="Tampilkan kata sandi" aria-pressed="false">◉</button></div>
+			<div class="field password-field"><label for="password">Kata sandi</label><input id="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required><button class="password-toggle" type="button" id="togglePassword" aria-label="Tampilkan kata sandi" aria-pressed="false">◉</button></div>
 			<button class="primary-btn" type="submit">Masuk ke Ruang Admin <span>→</span></button>
 			<div class="login-error" id="loginError">Nama pengguna atau kata sandi belum sesuai.</div>
 		</form>
@@ -1368,6 +1394,7 @@
 			<button class="nav-item" data-view="outgoing"><span class="icon">↑</span><span>Surat keluar</span></button>
 			<button class="nav-item" data-view="archive"><span class="icon">▦</span><span>Arsip surat</span></button>
 			<button class="nav-item" data-view="distribution"><span class="icon">⇢</span><span>Distribusi surat</span></button>
+			<button class="nav-item" data-view="schedule"><span class="icon">📅</span><span>Jadwal Kegiatan</span></button>
 			<button class="nav-item" data-view="announcements"><span class="icon">!</span><span>Pengumuman</span></button>
 			<button class="nav-item" data-view="reports"><span class="icon">▥</span><span>Laporan &amp; rekap</span></button>
 			<button class="nav-item" id="publicHomeBtn"><span class="icon">◉</span><span>Beranda publik</span></button>
@@ -1544,6 +1571,38 @@
 				<section class="panel" id="reportsPanel"><div class="panel-head"><div><h2>Laporan dan rekapitulasi</h2><p class="subtitle">Cetak laporan surat atau distribusi berdasarkan periode.</p></div></div><div class="report-controls"><label>Jenis laporan<select id="reportDataType"><option value="letters">Surat masuk dan keluar</option><option value="distribution">Distribusi surat</option></select></label><label>Jenis periode<select id="reportPeriod"><option value="month">Bulanan</option><option value="semester">Semesteran</option></select></label><label>Tahun<input id="reportYear" type="number" min="2000" max="2100"></label><label>Bulan<select id="reportMonth"><option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option><option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></label><label>Semester<select id="reportSemester"><option value="1">Semester I (Januari - Juni)</option><option value="2">Semester II (Juli - Desember)</option></select></label></div><div class="report-actions"><button class="outline-btn" id="printReport">▣ Cetak laporan</button></div><div class="report-paper" id="reportPaper"></div></section>
 				<section class="panel" id="archivePanel"><div class="panel-head"><div><h2>Arsip surat</h2><p class="subtitle">Arsip tersusun berdasarkan bulan dan tahun surat.</p></div></div><div class="archive-admin-controls"><div class="search"><span>⌕</span><input id="archiveSearch" placeholder="Cari nomor, perihal, atau pengirim..." aria-label="Cari arsip surat"></div><select id="archiveTypeFilter" aria-label="Filter jenis arsip"><option value="all">Semua jenis</option><option value="in">Surat masuk</option><option value="out">Surat keluar</option></select><select id="archiveYearFilter" aria-label="Filter tahun arsip"><option value="all">Semua tahun</option></select></div><div class="archive-admin-body" id="archiveGroups"></div></section>
 				<section class="panel" id="distributionPanel"><div class="panel-head"><div><h2>Distribusi Surat</h2><p class="subtitle">Data dikelola langsung pada Spreadsheet distribusi.</p></div></div><div class="distribution-controls"><div class="search"><span>⌕</span><input id="distributionSearch" placeholder="Cari surat, penerima, atau tujuan..." aria-label="Cari distribusi surat"></div><select id="distributionStatusFilter" aria-label="Filter status distribusi"><option value="all">Semua status</option></select></div><div class="distribution-table-wrap"><table class="distribution-table"><thead><tr><th>No.</th><th>Nomor surat</th><th>Tanggal</th><th>Perihal</th><th>Penerima / tujuan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="distributionRows"></tbody></table></div></section>
+				<section class="panel" id="schedulePanel" style="display:none">
+					<div class="panel-head"><div><h2>Schedule Kegiatan Harian</h2><p class="subtitle">Atur agenda serta booking gedung atau ruang kampus.</p></div><button class="outline-btn" id="newScheduleBookingBtn" type="button">＋ Booking baru</button></div>
+					<div class="schedule-admin-layout">
+						<section class="settings-card">
+							<h3 id="scheduleFormTitle">Booking kegiatan</h3>
+							<form class="schedule-admin-form" id="scheduleBookingForm">
+								<input type="hidden" name="id">
+								<div class="field"><label for="scheduleTitle">Nama kegiatan</label><input id="scheduleTitle" name="title" maxlength="160" required></div>
+								<div class="field"><label for="scheduleDate">Tanggal</label><input id="scheduleDate" name="date" type="date" required></div>
+								<div class="form-grid">
+									<div class="field"><label for="scheduleStartTime">Mulai</label><input id="scheduleStartTime" name="startTime" type="time" required></div>
+									<div class="field"><label for="scheduleEndTime">Selesai</label><input id="scheduleEndTime" name="endTime" type="time" required></div>
+								</div>
+								<div class="field"><label for="scheduleVenue">Gedung / ruang</label><select id="scheduleVenue" name="venue" required><option value="">Atur ruang terlebih dahulu</option></select></div>
+								<div class="field"><label for="scheduleParticipants">Perkiraan peserta (opsional)</label><input id="scheduleParticipants" name="participants" type="number" min="1" max="5000"></div>
+								<div class="field"><label for="scheduleStatus">Status booking</label><select id="scheduleStatus" name="status"><option value="approved">Disetujui</option><option value="pending">Menunggu</option><option value="rejected">Ditolak</option></select></div>
+								<div style="display:flex; gap:8px; flex-wrap:wrap"><button class="primary-btn" type="submit">Simpan booking</button><button class="outline-btn" id="cancelScheduleEditBtn" type="button" style="display:none">Batal</button></div>
+							</form>
+						</section>
+						<section class="settings-card schedule-room-setting">
+							<h3>Pengaturan gedung dan ruang</h3>
+							<p>Daftarkan nama gedung/ruang yang dapat dipilih saat membuat booking. Pisahkan tiap ruang dengan baris baru.</p>
+							<textarea id="scheduleRoomsInput" aria-label="Daftar gedung dan ruang"></textarea>
+							<button class="primary-btn" id="saveScheduleRoomsBtn" type="button" style="margin-top:10px">Simpan daftar ruang</button>
+						</section>
+						<section class="settings-card">
+							<div class="panel-head"><div><h3>Daftar booking</h3><p class="subtitle">Hanya agenda disetujui yang ditampilkan di halaman publik.</p></div><button class="outline-btn" id="refreshScheduleBtn" type="button">Muat ulang</button></div>
+							<div class="distribution-table-wrap"><table class="schedule-table"><thead><tr><th>Kegiatan</th><th>Tanggal &amp; waktu</th><th>Lokasi</th><th>Peserta</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="scheduleAdminRows"></tbody></table></div>
+							<div class="schedule-empty" id="scheduleAdminEmpty" style="display:none">Belum ada booking kegiatan.</div>
+						</section>
+					</div>
+				</section>
 			</main>
 			<nav class="admin-bottom-nav" id="adminBottomNav" aria-label="Navigasi Cepat Mobile">
 				<button class="bottom-tab-btn active" data-bottom-view="dashboard" type="button"><span class="icon">⌂</span><span>Beranda</span></button>
@@ -1819,6 +1878,8 @@
 			letters: [],
 			distributions: [],
 			announcements: [],
+			schedule: [],
+			scheduleRooms: [],
 			senderNames: loadStoredMaster('suratika_sender_names', DEFAULT_SENDER_NAMES),
 			recipientNames: loadStoredMaster('suratika_recipient_names', DEFAULT_RECIPIENT_NAMES),
 			collapsedDistributionMonths: new Set(),
@@ -1844,6 +1905,127 @@
 		function openAnnouncementEditor(id) { const item = state.announcements.find(announcement => announcement.id === id); if (!item) return; editingAnnouncementId = id; document.getElementById('announcementModalTitle').textContent = 'Edit pengumuman'; document.querySelector('#announcementForm button[type="submit"]').textContent = 'Simpan perubahan'; document.getElementById('announcementTitleInput').value = item.title; document.getElementById('announcementContentInput').value = item.content; document.getElementById('announcementModalWrap').style.display = 'grid'; }
 		function resetAnnouncementForm() { editingAnnouncementId = ''; document.getElementById('announcementForm').reset(); document.getElementById('announcementModalTitle').textContent = 'Buat pengumuman'; document.querySelector('#announcementForm button[type="submit"]').textContent = 'Publikasikan'; document.getElementById('announcementModalWrap').style.display = 'none'; }
 		async function loadAnnouncements(options = {}) { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&announcements=1&t=${Date.now()}`); const result = await readJsonResponse(response, 'Apps Script'); if (!result.ok) throw new Error(result.error || 'API pengumuman gagal'); state.announcements = (result.announcements || []).map(normalizeAnnouncement); renderAnnouncements(); if (!options.adminOnly) showAnnouncementPopup(); } catch (error) { console.warn('Announcement sync failed', error); } }
+		function normalizeScheduleBooking(item) { return { id: String(item.id || ''), title: String(item.title || ''), date: String(item.date || ''), startTime: String(item.startTime || ''), endTime: String(item.endTime || ''), venue: String(item.venue || ''), participants: String(item.participants || ''), status: String(item.status || 'pending').toLowerCase() }; }
+		function scheduleDateLabel(value) { const date = new Date(`${value}T00:00:00`); return Number.isNaN(date.getTime()) ? value || '-' : date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); }
+		function renderSchedule() {
+			const publicRows = document.getElementById('publicScheduleRows');
+			const publicBookings = state.schedule.filter(item => item.status === 'approved').sort((first, second) => `${first.date} ${first.startTime}`.localeCompare(`${second.date} ${second.startTime}`));
+			publicRows.innerHTML = publicBookings.length ? publicBookings.map(item => `<article class="schedule-public-card"><h3>${escapeHtml(item.title)}</h3><p>📅 ${escapeHtml(scheduleDateLabel(item.date))}</p><p>🕒 ${escapeHtml(item.startTime)}–${escapeHtml(item.endTime)}</p><p>📍 ${escapeHtml(item.venue)}</p>${item.participants ? `<p>👥 ${escapeHtml(item.participants)} peserta</p>` : ''}</article>`).join('') : '<div class="schedule-empty">Belum ada kegiatan yang disetujui untuk ditampilkan.</div>';
+			const adminRows = document.getElementById('scheduleAdminRows');
+			const empty = document.getElementById('scheduleAdminEmpty');
+			if (!adminRows || !empty) return;
+			const bookings = [...state.schedule].sort((first, second) => `${second.date} ${second.startTime}`.localeCompare(`${first.date} ${first.startTime}`));
+			empty.style.display = bookings.length ? 'none' : 'block';
+			adminRows.innerHTML = bookings.map(item => `<tr><td><strong>${escapeHtml(item.title)}</strong></td><td>${escapeHtml(scheduleDateLabel(item.date))}<br>${escapeHtml(item.startTime)}–${escapeHtml(item.endTime)}</td><td>${escapeHtml(item.venue)}</td><td>${escapeHtml(item.participants || '-')}</td><td><span class="schedule-status ${escapeHtml(item.status)}">${item.status === 'approved' ? 'Disetujui' : item.status === 'rejected' ? 'Ditolak' : 'Menunggu'}</span></td><td><div class="schedule-actions"><button class="outline-btn" type="button" data-schedule-action="edit" data-schedule-id="${escapeHtml(item.id)}">Edit / status</button><button class="outline-btn" type="button" data-schedule-action="delete" data-schedule-id="${escapeHtml(item.id)}">Hapus</button></div></td></tr>`).join('');
+		}
+		async function loadSchedule(adminOnly = false) {
+			const response = adminOnly
+				? await fetch(`/api/schedule?admin=1&t=${Date.now()}`, { cache: 'no-store', credentials: 'same-origin' })
+				: await fetch(`${APP_SCRIPT_URL}?api=1&schedule=1&t=${Date.now()}`);
+			const result = await readJsonResponse(response, 'Jadwal kegiatan');
+			if (!result.ok) throw new Error(result.error || 'Jadwal kegiatan gagal dimuat.');
+			state.schedule = (result.schedule || []).map(normalizeScheduleBooking);
+			state.scheduleRooms = Array.isArray(result.rooms) ? result.rooms.map(String) : [];
+			const venue = document.getElementById('scheduleVenue');
+			if (venue) {
+				const selected = venue.value;
+				venue.innerHTML = '<option value="">Pilih gedung / ruang</option>' + state.scheduleRooms.map(room => `<option value="${escapeHtml(room)}">${escapeHtml(room)}</option>`).join('');
+				if (state.scheduleRooms.includes(selected)) venue.value = selected;
+			}
+			const roomInput = document.getElementById('scheduleRoomsInput');
+			if (roomInput && adminOnly) roomInput.value = state.scheduleRooms.join('\n');
+			renderSchedule();
+		}
+		function resetScheduleForm() {
+			const form = document.getElementById('scheduleBookingForm');
+			form.reset();
+			form.elements.id.value = '';
+			document.getElementById('scheduleFormTitle').textContent = 'Booking kegiatan';
+			document.querySelector('#scheduleBookingForm button[type="submit"]').textContent = 'Simpan booking';
+			document.getElementById('cancelScheduleEditBtn').style.display = 'none';
+		}
+		async function postScheduleChange(action, data, verify) {
+			if (getCurrentAdmin().id !== 'super_admin') {
+				showToast('Hanya Super Admin yang dapat mengelola jadwal kegiatan.');
+				return false;
+			}
+			let saved;
+			try {
+				const response = await fetch('/api/schedule', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'same-origin',
+					body: JSON.stringify({ action, data })
+				});
+				const result = await readJsonResponse(response, 'Jadwal kegiatan');
+				saved = result.ok === true;
+			} catch (error) {
+				showToast(`Perubahan jadwal gagal: ${error.message}`);
+				return false;
+			}
+			if (!saved) return showToast('Perubahan jadwal gagal disimpan.');
+			for (let attempt = 0; attempt < 3; attempt += 1) {
+				await new Promise(resolve => setTimeout(resolve, attempt === 0 ? 500 : 1000));
+				try {
+					await loadSchedule(true);
+					if (verify()) return true;
+				} catch (error) {
+					console.error('Schedule write verification failed:', error);
+					if (attempt === 2) {
+						showToast(`Perubahan dikirim, tetapi jadwal gagal diverifikasi: ${error.message}`);
+						return false;
+					}
+				}
+			}
+			showToast('Perubahan belum terverifikasi pada Spreadsheet. Muat ulang dan periksa kembali.');
+			return false;
+		}
+		async function saveScheduleBooking(event) {
+			event.preventDefault();
+			const form = new FormData(event.currentTarget);
+			const data = { id: String(form.get('id') || ''), title: String(form.get('title') || '').trim(), date: String(form.get('date') || ''), startTime: String(form.get('startTime') || ''), endTime: String(form.get('endTime') || ''), venue: String(form.get('venue') || ''), participants: String(form.get('participants') || ''), status: String(form.get('status') || 'approved') };
+			if (!data.title || !data.date || !data.startTime || !data.endTime || !data.venue) return showToast('Lengkapi nama kegiatan, tanggal, waktu, dan ruang.');
+			if (data.endTime <= data.startTime) return showToast('Waktu selesai harus setelah waktu mulai.');
+			const previous = state.schedule.find(item => item.id === data.id);
+			const previousIds = new Set(state.schedule.map(item => item.id));
+			const action = data.id ? 'update' : 'create';
+			const saved = await postScheduleChange('saveScheduleBooking', data, () => {
+				const current = state.schedule.find(item => data.id ? item.id === data.id : !previousIds.has(item.id) && item.title === data.title && item.date === data.date && item.startTime === data.startTime && item.endTime === data.endTime && item.venue === data.venue);
+				return Boolean(current && current.title === data.title && current.date === data.date
+					&& current.startTime === data.startTime && current.endTime === data.endTime
+					&& current.venue === data.venue && current.participants === data.participants
+					&& current.status === data.status && (action === 'create' || previous));
+			});
+			if (!saved) return;
+			resetScheduleForm();
+			showToast(data.id ? 'Booking berhasil diperbarui.' : 'Booking berhasil disimpan.');
+		}
+		function editScheduleBooking(id) {
+			const item = state.schedule.find(booking => booking.id === id);
+			if (!item) return showToast('Booking tidak ditemukan. Muat ulang jadwal.');
+			const form = document.getElementById('scheduleBookingForm');
+			Object.entries(item).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value; });
+			document.getElementById('scheduleFormTitle').textContent = 'Edit booking kegiatan';
+			document.querySelector('#scheduleBookingForm button[type="submit"]').textContent = 'Simpan perubahan';
+			document.getElementById('cancelScheduleEditBtn').style.display = '';
+			document.getElementById('schedulePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+		async function handleScheduleAdminAction(event) {
+			const button = event.target.closest('[data-schedule-action]');
+			if (!button) return;
+			const item = state.schedule.find(booking => booking.id === button.dataset.scheduleId);
+			if (!item) return showToast('Booking tidak ditemukan.');
+			if (button.dataset.scheduleAction === 'edit') return editScheduleBooking(item.id);
+			if (!window.confirm(`Hapus booking "${item.title}"?`)) return;
+			const saved = await postScheduleChange('deleteScheduleBooking', { id: item.id }, () => !state.schedule.some(booking => booking.id === item.id));
+			if (saved) showToast('Booking berhasil dihapus.');
+		}
+		async function saveScheduleRooms() {
+			const rooms = document.getElementById('scheduleRoomsInput').value.split(/\n|[,;]/).map(room => room.trim()).filter(Boolean);
+			if (rooms.some(room => room.length > 80)) return showToast('Nama gedung/ruang maksimal 80 karakter.');
+			const saved = await postScheduleChange('saveScheduleRooms', { rooms: rooms.join('\n') }, () => JSON.stringify(state.scheduleRooms) === JSON.stringify([...new Set(rooms)]));
+			if (saved) showToast('Daftar gedung dan ruang berhasil disimpan.');
+		}
 		async function submitAnnouncementAction(action, data, successMessage) { const saved = await syncToAppsScript({ action, data }); syncToCloudflare({ action, data }); if (!saved) return showToast('Pengumuman belum tersimpan. Periksa koneksi Apps Script.'); resetAnnouncementForm(); await loadAnnouncements({ adminOnly: true }); showToast(successMessage); }
 		async function saveAnnouncement(event) { event.preventDefault(); const form = new FormData(event.target); const data = { id: editingAnnouncementId, title: String(form.get('title') || '').trim(), content: String(form.get('content') || '').trim() }; if (!data.title || !data.content) return showToast('Judul dan isi pengumuman wajib diisi.'); await submitAnnouncementAction(editingAnnouncementId ? 'updateAnnouncement' : 'createAnnouncement', data, editingAnnouncementId ? 'Pengumuman berhasil diperbarui.' : 'Pengumuman berhasil dipublikasikan.'); }
 		async function handleAnnouncementAction(event) { const button = event.target.closest('[data-announcement-action]'); if (!button) return; const id = button.dataset.announcementId; const action = button.dataset.announcementAction; if (action === 'edit') return openAnnouncementEditor(id); if (action === 'archive' && !window.confirm('Arsipkan pengumuman ini?')) return; if (action === 'delete' && !window.confirm('Hapus pengumuman ini secara permanen?')) return; await submitAnnouncementAction(`${action}Announcement`, { id }, action === 'archive' ? 'Pengumuman diarsipkan.' : 'Pengumuman dihapus.'); }
@@ -2165,7 +2347,6 @@
 			super_admin: {
 				id: 'super_admin',
 				username: 'superadmin',
-				password: '1122',
 				title: 'Super Admin',
 				name: 'Super Administrator',
 				unit: 'Pusat Tata Usaha & Biro Rektorat',
@@ -2173,7 +2354,7 @@
 				icon: '👑',
 				color: '#107253',
 				description: 'Akses penuh ke seluruh modul sistem (surat masuk, surat keluar, distribusi, arsip, laporan resmi, pengumuman, dan pengaturan).',
-				allowedViews: ['dashboard', 'letters', 'incoming', 'outgoing', 'archive', 'distribution', 'announcements', 'reports', 'settings'],
+				allowedViews: ['dashboard', 'letters', 'incoming', 'outgoing', 'archive', 'distribution', 'schedule', 'announcements', 'reports', 'settings'],
 				canCreate: ['in', 'out'],
 				canEditAny: true,
 				canDeleteAny: true
@@ -2181,7 +2362,6 @@
 			admin_incoming: {
 				id: 'admin_incoming',
 				username: 'adminsuratmasuk',
-				password: '1122',
 				title: 'Admin Surat Masuk',
 				name: 'Petugas Agenda Surat Masuk',
 				unit: 'Subbagian Tata Usaha & Penerimaan',
@@ -2197,7 +2377,6 @@
 			admin_outgoing: {
 				id: 'admin_outgoing',
 				username: 'adminsuratkeluar',
-				password: '1122',
 				title: 'Admin Surat Keluar',
 				name: 'Petugas Agenda Surat Keluar',
 				unit: 'Subbagian Ekspedisi & Penomoran',
@@ -2213,7 +2392,6 @@
 			admin_distribution: {
 				id: 'admin_distribution',
 				username: 'admindistribusi',
-				password: '1122',
 				title: 'Admin Distribusi Surat',
 				name: 'Petugas Distribusi & Ekspedisi',
 				unit: 'Unit Kurir & Distribusi Kampus',
@@ -2228,7 +2406,7 @@
 			}
 		};
 
-		let currentAdminRole = localStorage.getItem('suratika_current_admin') || 'super_admin';
+		let currentAdminRole = 'super_admin';
 		function getCurrentAdmin() {
 			return ADMIN_ACCOUNTS[currentAdminRole] || ADMIN_ACCOUNTS.super_admin;
 		}
@@ -3586,13 +3764,52 @@
 			setInterval(loadIntegrityStatus, 30000);
 		}
 		function showAdminLogin() { document.getElementById('publicScreen').style.display = 'none'; document.getElementById('publicFooter').style.display = 'none'; document.getElementById('appShell').style.display = 'none'; document.getElementById('loginScreen').style.display = 'grid'; }
+		async function enterAdminSession(roleId) {
+			if (!ADMIN_ACCOUNTS[roleId]) throw new Error('Peran admin dari server tidak dikenali.');
+			document.getElementById('loginScreen').style.display = 'none';
+			document.getElementById('appShell').style.display = 'flex';
+			document.getElementById('publicScreen').style.display = 'none';
+			document.getElementById('publicFooter').style.display = 'none';
+			applyAdminRole(roleId);
+			await loadLetters();
+			startDistributionPolling();
+		}
+		async function restoreAdminSession() {
+			try {
+				const response = await fetch('/api/admin/session', { cache: 'no-store', credentials: 'same-origin' });
+				if (response.status === 401) return;
+				const result = await readJsonResponse(response, 'Sesi admin');
+				if (result.ok) await enterAdminSession(result.role);
+			} catch (error) {
+				console.error('Admin session restore failed:', error);
+			}
+		}
+		async function logoutAdmin() {
+			try {
+				const response = await fetch('/api/admin/logout', {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: '{}'
+				});
+				await readJsonResponse(response, 'Keluar admin');
+				localStorage.removeItem('suratika_current_admin');
+				currentAdminRole = 'super_admin';
+				document.getElementById('appShell').style.display = 'none';
+				document.getElementById('loginScreen').style.display = 'none';
+				document.getElementById('publicScreen').style.display = 'block';
+				document.getElementById('publicFooter').style.display = 'block';
+			} catch (error) {
+				showToast(`Tidak dapat mengakhiri sesi admin: ${error.message}`);
+			}
+		}
 		const originalSyncToAppsScript = syncToAppsScript;
 		syncToAppsScript = async payload => { if (payload && payload.action === 'createLetter') payload.data = { ...payload.data, status: 'received', recipient: String(document.querySelector('#letterForm input[name="recipient"]')?.value || '').trim() }; return originalSyncToAppsScript(payload); };
 		document.getElementById('letterModalTitle') || (() => { const title = document.createElement('span'); title.id = 'letterModalTitle'; title.hidden = true; document.body.appendChild(title); })();
 		document.querySelectorAll('.nav-item[data-view]').forEach(item => item.addEventListener('click', () => { const view = item.dataset.view; const title = item.querySelector('span:last-child').textContent; document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active')); item.classList.add('active'); document.getElementById('crumbText').textContent = title; document.getElementById('settingsPanel').style.display = view === 'settings' ? 'block' : 'none'; document.getElementById('reportsPanel').style.display = view === 'reports' ? 'block' : 'none'; document.getElementById('archivePanel').style.display = view === 'archive' ? 'block' : 'none'; document.getElementById('distributionPanel').style.display = view === 'distribution' ? 'block' : 'none'; document.getElementById('latestDistributionPanel').style.display = view === 'dashboard' ? 'block' : 'none'; document.getElementById('pageTitle').textContent = view === 'dashboard' ? 'Selamat pagi, Rina.' : title; document.querySelector('.subtitle').textContent = view === 'dashboard' ? 'Berikut ringkasan aktivitas surat di kantor hari ini.' : view === 'reports' ? 'Cetak laporan resmi surat masuk dan surat keluar berdasarkan periode.' : view === 'archive' ? 'Arsip tersusun berdasarkan bulan dan tahun surat.' : view === 'distribution' ? 'Baca saja dari sheet Distribusi, tanpa pencatatan sistem.' : `Daftar ${title.toLowerCase()} yang tersimpan di Spreadsheet.`; if (view === 'incoming' || view === 'outgoing') { document.getElementById('typeFilter').value = view === 'incoming' ? 'in' : 'out'; } else if (view === 'letters' || view === 'dashboard') { document.getElementById('typeFilter').value = 'all'; } renderLetters(); if (view === 'reports') renderReport(); if (view === 'archive') renderArchive(); if (view === 'distribution') renderDistributions(); if (view !== 'dashboard' && view !== 'settings' && view !== 'reports' && view !== 'archive' && view !== 'distribution') document.getElementById('searchInput').focus(); }));
 		document.querySelectorAll('.nav-item[data-view]').forEach(item => item.addEventListener('click', () => { const isDistribution = item.dataset.view === 'distribution'; document.getElementById('openModal').style.display = isDistribution ? 'none' : ''; if (isDistribution) modalWrap.style.display = 'none'; }));
 		document.getElementById('publicHomeBtn').addEventListener('click', () => { document.getElementById('appShell').style.display = 'none'; document.getElementById('publicScreen').style.display = 'block'; document.getElementById('publicFooter').style.display = 'block'; });
-		document.getElementById('logoutBtn').addEventListener('click', showAdminLogin);
+		document.getElementById('logoutBtn').addEventListener('click', logoutAdmin);
 		document.getElementById('publicLoginBtn').addEventListener('click', showAdminLogin);
 		document.getElementById('publicAdminBtn').addEventListener('click', showAdminLogin);
 		document.getElementById('footerAdminLoginBtn')?.addEventListener('click', showAdminLogin);
@@ -3641,14 +3858,11 @@
 
 				const roleId = chip.dataset.roleId;
 				const roleUser = chip.dataset.roleUser;
-				const rolePass = chip.dataset.rolePass;
 
 				const usernameInput = document.getElementById('username');
-				const passwordInput = document.getElementById('password');
 				const infoBox = document.getElementById('loginRoleInfo');
 
 				if (usernameInput) usernameInput.value = roleUser;
-				if (passwordInput) passwordInput.value = rolePass;
 
 				const adminDef = ADMIN_ACCOUNTS[roleId];
 				if (infoBox && adminDef) {
@@ -3668,33 +3882,33 @@
 		});
 
 		// Login Form Submission with Multi-Account Validation
-		document.getElementById('loginForm').addEventListener('submit', event => {
+		document.getElementById('loginForm').addEventListener('submit', async event => {
 			event.preventDefault();
 			const u = String(document.getElementById('username').value || '').trim().toLowerCase();
-			const p = String(document.getElementById('password').value || '').trim();
-
-			let matchedRoleId = null;
-			if ((u === 'superadmin' || u === 'admin') && p === '1122') {
-				matchedRoleId = 'super_admin';
-			} else if ((u === 'adminsuratmasuk' || u === 'suratmasuk') && p === '1122') {
-				matchedRoleId = 'admin_incoming';
-			} else if ((u === 'adminsuratkeluar' || u === 'suratkeluar') && p === '1122') {
-				matchedRoleId = 'admin_outgoing';
-			} else if ((u === 'admindistribusi' || u === 'distribusi') && p === '1122') {
-				matchedRoleId = 'admin_distribution';
-			}
-
-			if (matchedRoleId) {
-				const errEl = document.getElementById('loginError');
-				if (errEl) errEl.style.display = 'none';
-				document.getElementById('loginScreen').style.display = 'none';
-				document.getElementById('appShell').style.display = 'flex';
-				applyAdminRole(matchedRoleId);
-				loadLetters();
-				startDistributionPolling();
-				showToast(`Berhasil masuk sebagai ${ADMIN_ACCOUNTS[matchedRoleId].title}`);
-			} else {
-				document.getElementById('loginError').style.display = 'block';
+			const p = String(document.getElementById('password').value || '');
+			const errorElement = document.getElementById('loginError');
+			const submitButton = document.querySelector('#loginForm button[type="submit"]');
+			if (submitButton) submitButton.disabled = true;
+			try {
+				const response = await fetch('/api/admin/login', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'same-origin',
+					body: JSON.stringify({ username: u, password: p })
+				});
+				const result = await readJsonResponse(response, 'Login admin');
+				if (!result.ok) throw new Error('Login admin gagal.');
+				document.getElementById('password').value = '';
+				if (errorElement) errorElement.style.display = 'none';
+				await enterAdminSession(result.role);
+				showToast(`Berhasil masuk sebagai ${ADMIN_ACCOUNTS[result.role].title}`);
+			} catch (error) {
+				if (errorElement) {
+					errorElement.textContent = error.message;
+					errorElement.style.display = 'block';
+				}
+			} finally {
+				if (submitButton) submitButton.disabled = false;
 			}
 		});
 		document.getElementById('saveEndpoint').addEventListener('click', () => { const endpoint = document.getElementById('endpointInput').value.trim(); if (!endpoint) return showToast('Masukkan URL Apps Script terlebih dahulu.'); localStorage.setItem('suratika_app_script_url', endpoint); showToast('URL disimpan, menguji koneksi...'); loadLetters(); });
@@ -3856,7 +4070,7 @@
 				document.querySelector('.workspace'),
 				document.getElementById('latestDistributionPanel')
 			];
-			const managedPanels = ['settingsPanel', 'announcementsPanel', 'reportsPanel', 'archivePanel', 'distributionPanel', 'maintenancePanel'].map(id => document.getElementById(id));
+			const managedPanels = ['settingsPanel', 'announcementsPanel', 'reportsPanel', 'archivePanel', 'distributionPanel', 'schedulePanel', 'maintenancePanel'].map(id => document.getElementById(id));
 			[...dashboardSections, ...managedPanels].forEach(element => { if (element) element.style.display = 'none'; });
 
 			if (view === 'dashboard') {
@@ -3874,6 +4088,15 @@
 				if (chartPanel) chartPanel.style.display = 'block';
 				renderDistributionRecharts();
 			}
+			if (view === 'schedule') {
+				const schedulePanel = document.getElementById('schedulePanel');
+				if (schedulePanel) schedulePanel.style.display = 'block';
+				loadSchedule(true).catch(error => {
+					console.error('Schedule admin load failed:', error);
+					document.getElementById('scheduleAdminRows').innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
+					showToast(`Jadwal gagal dimuat: ${error.message}`);
+				});
+			}
 			const panelByView = { settings: 'settingsPanel', announcements: 'announcementsPanel', reports: 'reportsPanel', archive: 'archivePanel', maintenance: 'maintenancePanel' };
 			if (panelByView[view]) document.getElementById(panelByView[view]).style.display = 'block';
 
@@ -3883,6 +4106,12 @@
 			closeAdminSidebar();
 		}
 		document.querySelectorAll('.nav-item[data-view]').forEach(item => item.addEventListener('click', () => syncAdminView(item.dataset.view)));
+		document.getElementById('scheduleBookingForm').addEventListener('submit', saveScheduleBooking);
+		document.getElementById('scheduleAdminRows').addEventListener('click', handleScheduleAdminAction);
+		document.getElementById('saveScheduleRoomsBtn').addEventListener('click', saveScheduleRooms);
+		document.getElementById('refreshScheduleBtn').addEventListener('click', () => loadSchedule(true).catch(error => showToast(`Jadwal gagal dimuat: ${error.message}`)));
+		document.getElementById('newScheduleBookingBtn').addEventListener('click', () => { resetScheduleForm(); document.getElementById('scheduleBookingForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+		document.getElementById('cancelScheduleEditBtn').addEventListener('click', resetScheduleForm);
 		document.querySelectorAll('.nav-item[data-view="incoming"], .nav-item[data-view="outgoing"]').forEach(item => item.addEventListener('click', () => { activeLetterType = item.dataset.view === 'incoming' ? 'in' : 'out'; document.querySelector('#letterForm input[name="type"]').value = activeLetterType; document.getElementById('openSpreadsheetBtn').style.display = 'block'; document.getElementById('openDriveBtn').style.display = 'block'; }));
 		document.querySelectorAll('.nav-item[data-view]').forEach(item => item.addEventListener('click', () => { const view = item.dataset.view; if (view !== 'incoming' && view !== 'outgoing') { document.getElementById('openSpreadsheetBtn').style.display = 'none'; document.getElementById('openDriveBtn').style.display = 'none'; } }));
 		document.querySelectorAll('.nav-item[data-view]').forEach(item => item.addEventListener('click', updateGreeting));
@@ -4590,7 +4819,7 @@
 			}
 		}
 
-		document.getElementById('endpointInput').value = APP_SCRIPT_URL; document.getElementById('reportYear').value = new Date().getFullYear(); document.getElementById('distributionPanel').style.display = 'none'; const savedHeroImage = localStorage.getItem('suratika_hero_image'); if (savedHeroImage) applyHeroImage(savedHeroImage); loadSavedGradient(); initMasterSelectHandlers(); initNotificationSystem(); updateSenderSuggestions(); updateRecipientSuggestions(); renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); renderReport(); updateStats(); loadLetters();
+		document.getElementById('endpointInput').value = APP_SCRIPT_URL; document.getElementById('reportYear').value = new Date().getFullYear(); document.getElementById('distributionPanel').style.display = 'none'; const savedHeroImage = localStorage.getItem('suratika_hero_image'); if (savedHeroImage) applyHeroImage(savedHeroImage); loadSavedGradient(); initMasterSelectHandlers(); initNotificationSystem(); updateSenderSuggestions(); updateRecipientSuggestions(); renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); renderReport(); updateStats(); loadLetters(); loadSchedule().catch(error => { console.error('Public schedule load failed:', error); document.getElementById('publicScheduleRows').innerHTML = `<div class="schedule-empty">Jadwal tidak dapat dimuat: ${escapeHtml(error.message)}</div>`; }); restoreAdminSession();
 
 		document.getElementById('saveHeroImage').addEventListener('click', event => { event.stopImmediatePropagation(); const input = document.getElementById('heroImageInput'); input.multiple = true; const files = [...input.files]; if (!files.length) return showToast('Pilih minimal satu gambar banner.'); if (files.some(file => file.size > 5 * 1024 * 1024)) return showToast('Ukuran maksimal setiap gambar adalah 5 MB.'); const readerTasks = files.map(file => new Promise(resolve => { const reader = new FileReader(); reader.onload = () => resolve({ base64: reader.result, name: file.name, mimeType: file.type }); reader.readAsDataURL(file); })); const button = document.getElementById('saveHeroImage'); button.disabled = true; button.textContent = 'Menyimpan banner...'; Promise.all(readerTasks).then(async images => { applyHeroImages(images.map(image => image.base64)); const saved = await syncToAppsScript({ action: 'saveHeroImages', data: { images } }); if (saved) await loadHeroSliderFromServer(); button.disabled = false; button.textContent = 'Simpan banner slider'; showToast(saved ? `${images.length} banner tersimpan permanen.` : 'Banner tampil sementara. Upload ke server gagal.'); }); }, true);
 		document.getElementById('heroImageInput').multiple = true; const heroSettingsCard = document.getElementById('heroImageInput').closest('.settings-card'); heroSettingsCard.querySelector('h3').textContent = 'Banner hero Beranda Publik'; heroSettingsCard.querySelector('p').textContent = 'Pilih beberapa gambar resmi kampus atau kegiatan untuk slider banner vertikal.';

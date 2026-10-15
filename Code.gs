@@ -8,7 +8,9 @@ const CONFIG = {
   senderSheetName: PropertiesService.getScriptProperties().getProperty('SENDER_SHEET_NAME') || 'Pengirim',
   recipientSheetName: PropertiesService.getScriptProperties().getProperty('RECIPIENT_SHEET_NAME') || 'Tujuan',
   announcementSheetName: PropertiesService.getScriptProperties().getProperty('ANNOUNCEMENT_SHEET_NAME') || 'Pengumuman',
-  bannerSheetName: PropertiesService.getScriptProperties().getProperty('BANNER_SHEET_NAME') || 'Banner'
+  bannerSheetName: PropertiesService.getScriptProperties().getProperty('BANNER_SHEET_NAME') || 'Banner',
+  scheduleSheetName: PropertiesService.getScriptProperties().getProperty('SCHEDULE_SHEET_NAME') || 'Jadwal Kegiatan',
+  scheduleRoomsSheetName: PropertiesService.getScriptProperties().getProperty('SCHEDULE_ROOMS_SHEET_NAME') || 'Ruang Kegiatan'
 };
 
 function doGet(event) {
@@ -16,6 +18,14 @@ function doGet(event) {
     return HtmlService.createHtmlOutputFromFile('index')
       .setTitle('Suratika - Manajemen Surat Menyurat')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
+
+  if (event.parameter.schedule === '1') {
+    return json_({
+      ok: true,
+      schedule: readScheduleRowsGlobal_(false),
+      rooms: readScheduleRoomsGlobal_()
+    });
   }
 
   const data = getLetterData_();
@@ -49,6 +59,59 @@ function doGet(event) {
       direction: properties.getProperty('GRADIENT_DIRECTION') || '135deg'
     }
   });
+}
+
+function getScheduleSheetGlobal_() {
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
+  const sheet = findSheetByName_(spreadsheet, CONFIG.scheduleSheetName) || spreadsheet.insertSheet(CONFIG.scheduleSheetName);
+  const headers = ['id', 'title', 'date', 'startTime', 'endTime', 'venue', 'participants', 'status', 'createdAt', 'updatedAt'];
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+  } else {
+    const existing = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getDisplayValues()[0];
+    if (headers.some((header, index) => existing[index] !== header)) {
+      throw new Error(`Header sheet "${CONFIG.scheduleSheetName}" tidak sesuai. Gunakan kolom: ${headers.join(', ')}.`);
+    }
+  }
+  return sheet;
+}
+
+function getScheduleRoomsSheetGlobal_() {
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
+  const sheet = findSheetByName_(spreadsheet, CONFIG.scheduleRoomsSheetName) || spreadsheet.insertSheet(CONFIG.scheduleRoomsSheetName);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['name']);
+  } else if (sheet.getRange(1, 1).getDisplayValue() !== 'name') {
+    throw new Error(`Header sheet "${CONFIG.scheduleRoomsSheetName}" tidak sesuai. Gunakan kolom: name.`);
+  }
+  return sheet;
+}
+
+function readScheduleRowsGlobal_(adminView) {
+  const sheet = getScheduleSheetGlobal_();
+  if (sheet.getLastRow() < 2) return [];
+  return sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getDisplayValues().flatMap(row => {
+    if (!row[0]) return [];
+    const item = {
+      id: row[0], title: row[1], date: row[2], startTime: row[3], endTime: row[4],
+      venue: row[5], participants: row[6], status: String(row[7] || 'pending').toLowerCase()
+    };
+    return adminView || item.status === 'approved' ? [item] : [];
+  });
+}
+
+function readScheduleRoomsGlobal_() {
+  const sheet = getScheduleRoomsSheetGlobal_();
+  if (sheet.getLastRow() < 2) return [];
+  return [...new Set(sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues()
+    .map(row => String(row[0]).trim()).filter(Boolean))];
+}
+
+function requireScheduleProxy_(providedKey) {
+  const expectedKey = PropertiesService.getScriptProperties().getProperty('SCHEDULE_PROXY_KEY');
+  if (!expectedKey || String(providedKey || '') !== expectedKey) {
+    throw new Error('Akses jadwal ditolak.');
+  }
 }
 
 function getDistributionData_() {
@@ -131,12 +194,103 @@ function getExistingLetterSheet_(type, sourceSheet) {
 function doPost(event) {
   try {
     const body = JSON.parse(event.postData.contents || '{}');
+    if (body.action === 'readAdminSchedule') {
+      requireScheduleProxy_((body.data || {}).proxyKey);
+      return json_({
+        ok: true,
+        schedule: readScheduleRowsGlobal_(true),
+        rooms: readScheduleRoomsGlobal_()
+      });
+    }
+    if (['saveScheduleBooking', 'deleteScheduleBooking', 'saveScheduleRooms'].includes(body.action)) {
+      const data = body.data || {};
+      requireScheduleProxy_(data.proxyKey);
+      delete data.proxyKey;
+      return handleScheduleAction_(body.action, data);
+    }
     if (body.action === 'saveSenderNames') {
       const names = [...new Set(String((body.data || {}).names || '').split(/[\n,;]+/).map(name => name.trim()).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id'));
       const sheet = getSenderSheet_();
       sheet.clearContents();
       sheet.getRange(1, 1, names.length + 1, 1).setValues([['name'], ...names.map(name => [name])]);
       return json_({ ok: true, senderNames: names });
+    }
+
+    function handleScheduleAction_(action, data) {
+      const lock = LockService.getScriptLock();
+      if (!lock.tryLock(10000)) throw new Error('Jadwal sedang diperbarui. Coba kembali beberapa saat lagi.');
+      try {
+        if (action === 'saveScheduleRooms') {
+          const rooms = [...new Set(String(data.rooms || '').split(/[\n,;]+/).map(room => room.trim()).filter(Boolean))];
+          if (rooms.some(room => room.length > 80)) throw new Error('Nama ruang maksimal 80 karakter.');
+          const currentBookings = readScheduleRowsGlobal_(true);
+          const retainedRoomNames = new Set(rooms.map(room => room.toLowerCase()));
+          const removedBookedRooms = currentBookings.some(item => item.status !== 'rejected' && !retainedRoomNames.has(item.venue.toLowerCase()));
+          if (removedBookedRooms) throw new Error('Ruang yang masih memiliki booking aktif tidak dapat dihapus.');
+          const sheet = getScheduleRoomsSheetGlobal_();
+          sheet.clearContents();
+          sheet.getRange(1, 1, rooms.length + 1, 1).setValues([['name'], ...rooms.map(room => [room])]);
+          return json_({ ok: true, rooms });
+        }
+
+        const sheet = getScheduleSheetGlobal_();
+        const values = sheet.getDataRange().getDisplayValues();
+        const id = String(data.id || '').trim();
+        if (action === 'deleteScheduleBooking') {
+          if (!id) throw new Error('ID booking wajib diisi.');
+          const row = values.findIndex((value, index) => index > 0 && value[0] === id);
+          if (row < 1) return json_({ ok: false, error: 'Booking tidak ditemukan.' });
+          sheet.deleteRow(row + 1);
+          return json_({ ok: true });
+        }
+
+        const title = String(data.title || '').trim();
+        const date = String(data.date || '').trim();
+        const startTime = String(data.startTime || '').trim();
+        const endTime = String(data.endTime || '').trim();
+        const venue = String(data.venue || '').trim();
+        const status = String(data.status || 'approved').trim().toLowerCase();
+        const participants = String(data.participants || '').trim();
+        if (!title || title.length > 160) throw new Error('Nama kegiatan wajib diisi (maksimal 160 karakter).');
+        const dateParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+        const parsedDate = dateParts ? new Date(Date.UTC(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))) : null;
+        if (!dateParts || parsedDate.getUTCFullYear() !== Number(dateParts[1])
+          || parsedDate.getUTCMonth() !== Number(dateParts[2]) - 1
+          || parsedDate.getUTCDate() !== Number(dateParts[3])) throw new Error('Tanggal kegiatan tidak valid.');
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
+          throw new Error('Rentang waktu kegiatan tidak valid.');
+        }
+        if (!venue || venue.length > 80 || !readScheduleRoomsGlobal_().some(room => room.toLowerCase() === venue.toLowerCase())) {
+          throw new Error('Pilih ruang atau gedung yang terdaftar di pengaturan.');
+        }
+        if (!['pending', 'approved', 'rejected'].includes(status)) throw new Error('Status booking tidak valid.');
+        if (participants && (!/^\d+$/.test(participants) || Number(participants) < 1 || Number(participants) > 5000)) {
+          throw new Error('Jumlah peserta harus berupa angka antara 1 sampai 5000.');
+        }
+
+        const existingIndex = id ? values.findIndex((row, index) => index > 0 && row[0] === id) : -1;
+        if (id && existingIndex < 1) return json_({ ok: false, error: 'Booking tidak ditemukan. Muat ulang jadwal lalu coba kembali.' });
+        if (status === 'approved') {
+          const conflict = values.some((row, index) => {
+            if (index === 0 || index === existingIndex || row[7].toLowerCase() !== 'approved') return false;
+            return row[2] === date && row[5].toLowerCase() === venue.toLowerCase()
+              && startTime < row[4] && endTime > row[3];
+          });
+          if (conflict) throw new Error('Ruang sudah dibooking pada rentang waktu tersebut.');
+        }
+
+        const now = new Date().toISOString();
+        const record = [id || Utilities.getUuid(), title, date, startTime, endTime, venue, participants, status,
+          existingIndex > 0 ? values[existingIndex][8] : now, now];
+        if (existingIndex > 0) {
+          sheet.getRange(existingIndex + 1, 1, 1, record.length).setValues([record]);
+        } else {
+          sheet.appendRow(record);
+        }
+        return json_({ ok: true, id: record[0] });
+      } finally {
+        lock.releaseLock();
+      }
     }
     if (body.action === 'saveRecipientNames') {
       const names = [...new Set(String((body.data || {}).names || '').split(/[\n,;]+/).map(name => name.trim()).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id'));
