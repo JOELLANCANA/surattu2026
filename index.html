@@ -1539,7 +1539,7 @@
 				</section>
 				<div class="workspace"><section class="panel"><div class="panel-head"><h2>Surat terbaru</h2><label class="view-all" for="letterLimitFilter">Tampilkan <select id="letterLimitFilter" aria-label="Jumlah surat terbaru"><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="all">Semua</option></select></label></div><div class="filters"><div class="search"><span>⌕</span><input id="searchInput" placeholder="Cari nomor, perihal, atau pengirim..."></div><select id="typeFilter"><option value="all">Semua jenis</option><option value="in">Surat masuk</option><option value="out">Surat keluar</option></select><select id="statusFilter"><option value="all">Semua status</option><option value="in">Diterima</option><option value="out">Terkirim</option><option value="wait">Menunggu</option></select></div><div class="table-wrap"><table><thead><tr><th>Informasi surat</th><th>Jenis</th><th>Tanggal</th><th>Status</th><th style="text-align:right;">Tindakan &amp; Tanda Terima</th></tr></thead><tbody id="letterRows"></tbody></table></div></section><aside class="panel"><div class="panel-head"><h2>Aktivitas terbaru</h2></div><div class="activity"><div class="activity-item"><div class="activity-dot">✓</div><p><strong>Data tersinkronisasi</strong> dari Google Spreadsheet.<br><small id="lastSync">Menunggu sinkronisasi</small></p></div><div class="activity-item"><div class="activity-dot">↗</div><p><strong>Arsip Drive</strong> siap menerima lampiran surat.<br><small>Terhubung ke folder Drive</small></p></div></div></aside></div>
 				<section class="panel distribution-latest" id="latestDistributionPanel"><div class="panel-head"><div><h2>Distribusi Terbaru</h2><p class="subtitle">10 surat aktif terbaru dari sheet Distribusi, dikelompokkan per bulan.</p></div><a class="view-all" href="#" id="viewDistribution">Lihat semua →</a></div><div class="distribution-list" id="latestDistributionRows"></div></section>
-				<section class="panel" id="settingsPanel"><div class="panel-head"><div><h2>Pengaturan sistem</h2><p class="subtitle">Kelola koneksi penyimpanan dan preferensi aplikasi.</p></div><span class="connection" id="connectionStatus"><i></i> Belum diuji</span></div><div class="settings-grid"><div class="settings-card" id="integritySettingsCard"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><h3>Verifikasi &amp; Sinkronisasi Metadata (Drive &amp; Sheets)</h3><span class="connection ok" id="integrityConnectionStatus"><i class="integrity-pulse"></i> Auto Background (30m)</span></div><p>Sistem background job otomatis memverifikasi dan menyinkronkan integritas metadata surat antara Google Sheets dan Google Drive untuk mencegah link berkas rusak.</p><div class="integrity-card-stats"><div class="integrity-card-stat"><strong id="integrityTotalChecked">0</strong><span>Dokumen Diperiksa</span></div><div class="integrity-card-stat"><strong id="integrityVerifiedCount" style="color:var(--sage)">0</strong><span>Terverifikasi Drive</span></div><div class="integrity-card-stat"><strong id="integrityRepairedCount" style="color:#d97706">0</strong><span>Pulih Otomatis</span></div></div><div style="font-size:11px; color:var(--muted); margin-bottom:12px; display:flex; justify-content:space-between;"><span id="integrityLastCheckedText">Terakhir dicek: Menunggu pemeriksaan</span><span id="integrityHealthBadge" style="font-weight:700; color:var(--sage-dark)">Kondisi Sehat</span></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="primary-btn" id="runIntegritySyncBtn">⚡ Jalankan Verifikasi Sekarang</button><button class="outline-btn" id="openIntegrityReportBtn">📋 Laporan Detail</button><button class="outline-btn" id="installAppsScriptTriggerBtn">⏰ Cek Trigger 1 Jam</button></div></div><div class="settings-card" id="vercelSettingsCard"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><h3>Deployment Vercel (Produksi)</h3><span class="connection ok" id="vercelConnectionStatus"><i></i> vercel.json Siap</span></div><p>Aplikasi siap di-deploy ke Vercel dengan serverless API function, static asset caching, dan Zero-Config deployment.</p><div style="background:#1e293b; color:#f8fafc; padding:10px 12px; border-radius:7px; font-family:monospace; margin:10px 0; font-size:11.5px; display:flex; justify-content:space-between; align-items:center;"><code>npx vercel --prod</code><button type="button" id="copyVercelCmdBtn" style="background:rgba(255,255,255,.15); border:0; color:white; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Salin</button></div><div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;"><button class="primary-btn" id="openVercelGuideBtn">📖 Panduan Deploy Vercel</button><a href="https://vercel.com/new" target="_blank" rel="noopener" class="outline-btn" style="text-decoration:none; display:inline-flex; align-items:center;">▲ Buka Vercel</a></div></div><div class="settings-card" id="cloudflareSettingsCard"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><h3>Integrasi Cloudflare (Workers &amp; Pages)</h3><span class="connection" id="cloudflareConnectionStatus"><i></i> Belum diuji</span></div><p>Database tersimpan otomatis ke Cloudflare (Workers KV / D1) selain Google Spreadsheet &amp; Google Drive.</p><label style="display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px;">Endpoint Worker / Pages API</label><input id="cloudflareUrlInput" type="url" placeholder="https://si-surat.workers.dev/api atau /api/cloudflare" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px;"><label style="display:block; font-size:11px; font-weight:700; color:var(--muted); margin:10px 0 5px;">API Token (opsional)</label><input id="cloudflareTokenInput" type="password" placeholder="Bearer Token (kosongkan jika terbuka)" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px;"><div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;"><button class="primary-btn" id="saveCloudflareBtn">Simpan &amp; Uji Cloudflare</button><button class="outline-btn" id="syncAllCloudflareBtn">⚡ Backup Semua ke Cloudflare</button><button type="button" class="outline-btn" id="openCloudflareGuideBtn">📖 Panduan Deploy</button></div></div><div class="settings-card"><h3>Koneksi Apps Script</h3><p>URL ini dipakai untuk membaca dan menyimpan data surat.</p><input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec"><button class="primary-btn" id="saveEndpoint" style="margin-top:12px">Simpan dan uji koneksi</button></div><div class="settings-card"><h3>Gambar hero Beranda Publik</h3><p>Pilih gambar resmi kampus atau kegiatan untuk menggantikan latar hero.</p><input id="heroImageInput" type="file" accept="image/png,image/jpeg,image/webp"><button class="primary-btn" id="saveHeroImage" style="margin-top:12px">Terapkan gambar hero</button></div><div class="settings-card"><h3>Gradiasi latar Beranda Publik</h3><p>Atur warna dan arah gradiasi yang tampil di latar halaman publik.</p><div class="gradient-controls"><label>Warna 1 <input id="gradientColorOne" type="color" value="#f7f8f2"></label><label>Warna 2 <input id="gradientColorTwo" type="color" value="#dcefe3"></label><select id="gradientDirection" aria-label="Arah gradiasi"><option value="135deg">Diagonal lembut</option><option value="90deg">Dari kiri ke kanan</option><option value="180deg">Dari atas ke bawah</option><option value="45deg">Diagonal naik</option></select></div><div class="gradient-preview" id="gradientPreview"></div><button class="primary-btn" id="saveGradient" style="margin-top:12px">Simpan gradiasi</button></div><div class="settings-card"><h3>Penyimpanan dokumen</h3><p>Metadata tersimpan di Google Spreadsheet dan lampiran di Google Drive.</p><div class="connection ok"><i></i> Google Drive terkonfigurasi</div><br><div class="connection ok" style="margin-top:10px"><i></i> Spreadsheet terkonfigurasi</div><br><div class="connection ok" style="margin-top:10px"><i></i> Cloudflare Workers &amp; Pages siap</div></div></div></section>
+				<section class="panel" id="settingsPanel"><div class="panel-head"><div><h2>Pengaturan sistem</h2><p class="subtitle">Kelola koneksi penyimpanan dan preferensi aplikasi.</p></div><span class="connection" id="connectionStatus"><i></i> Belum diuji</span></div><div class="settings-grid"><div class="settings-card" id="integritySettingsCard"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><h3>Verifikasi &amp; Sinkronisasi Metadata (Drive &amp; Sheets)</h3><span class="connection ok" id="integrityConnectionStatus"><i class="integrity-pulse"></i> Auto Background (30m)</span></div><p>Sistem background job otomatis memverifikasi dan menyinkronkan integritas metadata surat antara Google Sheets dan Google Drive untuk mencegah link berkas rusak.</p><div class="integrity-card-stats"><div class="integrity-card-stat"><strong id="integrityTotalChecked">0</strong><span>Dokumen Diperiksa</span></div><div class="integrity-card-stat"><strong id="integrityVerifiedCount" style="color:var(--sage)">0</strong><span>Terverifikasi Drive</span></div><div class="integrity-card-stat"><strong id="integrityRepairedCount" style="color:#d97706">0</strong><span>Pulih Otomatis</span></div></div><div style="font-size:11px; color:var(--muted); margin-bottom:12px; display:flex; justify-content:space-between;"><span id="integrityLastCheckedText">Terakhir dicek: Menunggu pemeriksaan</span><span id="integrityHealthBadge" style="font-weight:700; color:var(--sage-dark)">Kondisi Sehat</span></div><div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="primary-btn" id="runIntegritySyncBtn">⚡ Jalankan Verifikasi Sekarang</button><button class="outline-btn" id="openIntegrityReportBtn">📋 Laporan Detail</button><button class="outline-btn" id="installAppsScriptTriggerBtn">⏰ Cek Trigger 1 Jam</button></div></div><div class="settings-card" id="vercelSettingsCard"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;"><h3>Deployment Vercel (Produksi)</h3><span class="connection ok" id="vercelConnectionStatus"><i></i> vercel.json Siap</span></div><p>Aplikasi siap di-deploy ke Vercel dengan serverless API function, static asset caching, dan Zero-Config deployment.</p><div style="background:#1e293b; color:#f8fafc; padding:10px 12px; border-radius:7px; font-family:monospace; margin:10px 0; font-size:11.5px; display:flex; justify-content:space-between; align-items:center;"><code>npx vercel --prod</code><button type="button" id="copyVercelCmdBtn" style="background:rgba(255,255,255,.15); border:0; color:white; padding:3px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Salin</button></div><div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;"><button class="primary-btn" id="openVercelGuideBtn">📖 Panduan Deploy Vercel</button><a href="https://vercel.com/new" target="_blank" rel="noopener" class="outline-btn" style="text-decoration:none; display:inline-flex; align-items:center;">▲ Buka Vercel</a></div></div><div class="settings-card"><h3>Koneksi Apps Script</h3><p>URL ini dipakai untuk membaca dan menyimpan data surat.</p><input id="endpointInput" type="url" placeholder="https://script.google.com/macros/s/.../exec"><button class="primary-btn" id="saveEndpoint" style="margin-top:12px">Simpan dan uji koneksi</button></div><div class="settings-card"><h3>Gambar hero Beranda Publik</h3><p>Pilih gambar resmi kampus atau kegiatan untuk menggantikan latar hero.</p><input id="heroImageInput" type="file" accept="image/png,image/jpeg,image/webp"><button class="primary-btn" id="saveHeroImage" style="margin-top:12px">Terapkan gambar hero</button></div><div class="settings-card"><h3>Gradiasi latar Beranda Publik</h3><p>Atur warna dan arah gradiasi yang tampil di latar halaman publik.</p><div class="gradient-controls"><label>Warna 1 <input id="gradientColorOne" type="color" value="#f7f8f2"></label><label>Warna 2 <input id="gradientColorTwo" type="color" value="#dcefe3"></label><select id="gradientDirection" aria-label="Arah gradiasi"><option value="135deg">Diagonal lembut</option><option value="90deg">Dari kiri ke kanan</option><option value="180deg">Dari atas ke bawah</option><option value="45deg">Diagonal naik</option></select></div><div class="gradient-preview" id="gradientPreview"></div><button class="primary-btn" id="saveGradient" style="margin-top:12px">Simpan gradiasi</button></div><div class="settings-card"><h3>Penyimpanan dokumen</h3><p>Metadata tersimpan di Google Spreadsheet dan lampiran di Google Drive.</p><div class="connection ok"><i></i> Google Drive terkonfigurasi</div><br><div class="connection ok" style="margin-top:10px"><i></i> Spreadsheet terkonfigurasi</div><br><div class="connection ok" style="margin-top:10px"><i></i> Cloudflare Workers &amp; Pages siap</div></div></div></section>
 				<section class="panel" id="announcementsPanel"><div class="panel-head"><div><h2>Pengumuman</h2><p class="subtitle">Terbitkan informasi yang tampil sebagai popup di beranda publik.</p></div><button class="primary-btn" id="openAnnouncementModal">＋ &nbsp;Buat pengumuman</button></div><div class="announcement-admin-list"><table class="announcement-admin-table"><thead><tr><th>Pengumuman</th><th>Terbit</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="announcementAdminRows"></tbody></table></div></section>
 				<section class="panel" id="reportsPanel"><div class="panel-head"><div><h2>Laporan dan rekapitulasi</h2><p class="subtitle">Cetak laporan surat atau distribusi berdasarkan periode.</p></div></div><div class="report-controls"><label>Jenis laporan<select id="reportDataType"><option value="letters">Surat masuk dan keluar</option><option value="distribution">Distribusi surat</option></select></label><label>Jenis periode<select id="reportPeriod"><option value="month">Bulanan</option><option value="semester">Semesteran</option></select></label><label>Tahun<input id="reportYear" type="number" min="2000" max="2100"></label><label>Bulan<select id="reportMonth"><option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option><option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></label><label>Semester<select id="reportSemester"><option value="1">Semester I (Januari - Juni)</option><option value="2">Semester II (Juli - Desember)</option></select></label></div><div class="report-actions"><button class="outline-btn" id="printReport">▣ Cetak laporan</button></div><div class="report-paper" id="reportPaper"></div></section>
 				<section class="panel" id="archivePanel"><div class="panel-head"><div><h2>Arsip surat</h2><p class="subtitle">Arsip tersusun berdasarkan bulan dan tahun surat.</p></div></div><div class="archive-admin-controls"><div class="search"><span>⌕</span><input id="archiveSearch" placeholder="Cari nomor, perihal, atau pengirim..." aria-label="Cari arsip surat"></div><select id="archiveTypeFilter" aria-label="Filter jenis arsip"><option value="all">Semua jenis</option><option value="in">Surat masuk</option><option value="out">Surat keluar</option></select><select id="archiveYearFilter" aria-label="Filter tahun arsip"><option value="all">Semua tahun</option></select></div><div class="archive-admin-body" id="archiveGroups"></div></section>
@@ -1715,8 +1715,29 @@
 	<div class="toast" id="toast"></div>
 	<div class="live-popup" id="liveDistributionPopup" role="status" aria-live="polite"><div class="live-popup-head"><strong>Distribusi surat baru</strong><span class="live-indicator"><i></i> Live</span></div><p id="liveDistributionMessage"></p><div class="live-popup-actions"><button class="outline-btn" type="button" id="closeDistributionPopup">Tutup</button><button class="primary-btn" type="button" id="openDistributionFromPopup">Lihat distribusi</button></div></div>
 	<script>
-		// Set this after deploying Code.gs as a Web App.
-		const APP_SCRIPT_URL = localStorage.getItem('suratika_app_script_url') || 'https://script.google.com/macros/s/AKfycbzz42Zo1Auieas1Grsz7LTjYhcWxBdpTFxIOYVbQQsbmsYYHwo_M5LlioXDp4fTSiES/exec';
+		const APP_SCRIPT_DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxsldn4fZkWKogl1qe4yhja9GzRaNo6BoVkUO1X0zU-TaT7TFsLUlERrAb6eubdnohF/exec';
+		const LEGACY_APP_SCRIPT_URL_PREFIX = 'https://script.google.com/macros/s/AKfycbzz42Zo1Auieas1Grsz7LTjYhcWxBdpTFxIOYVbQQsbmsYYHwo_M5LlioXDp4fTSiES/exec';
+		const savedAppScriptUrl = localStorage.getItem('suratika_app_script_url');
+		const APP_SCRIPT_URL = savedAppScriptUrl && savedAppScriptUrl.startsWith(LEGACY_APP_SCRIPT_URL_PREFIX)
+			? APP_SCRIPT_DEFAULT_URL
+			: savedAppScriptUrl || APP_SCRIPT_DEFAULT_URL;
+		if (savedAppScriptUrl && savedAppScriptUrl.startsWith(LEGACY_APP_SCRIPT_URL_PREFIX)) {
+			localStorage.setItem('suratika_app_script_url', APP_SCRIPT_DEFAULT_URL);
+		}
+		async function readJsonResponse(response, serviceName) {
+			const body = await response.text();
+			let result;
+			try {
+				result = JSON.parse(body);
+			} catch {
+				if (/^\s*forbidden\.?\s*$/i.test(body)) {
+					throw new Error(`${serviceName} menolak akses (Forbidden). Gunakan URL Web App terbaru dan pastikan akses deployment Apps Script disetel ke Anyone.`);
+				}
+				throw new Error(`${serviceName} tidak mengembalikan JSON yang valid (HTTP ${response.status}).`);
+			}
+			if (!response.ok) throw new Error(result.error || `${serviceName} gagal (HTTP ${response.status}).`);
+			return result;
+		}
 		const demoLetters = [
 			{ number: '018/DISDIK/VI/2026', subject: 'Undangan rapat koordinasi pendidikan', sender: 'Dinas Pendidikan', type: 'in', date: '08 Jun 2026', status: 'received' },
 			{ number: '017/ORG/VI/2026', subject: 'Permohonan data kepegawaian', sender: 'Bagian Kepegawaian', type: 'out', date: '07 Jun 2026', status: 'received' },
@@ -1820,7 +1841,7 @@
 		function closeAnnouncementPopup() { const popup = document.getElementById('announcementPopup'); if (popup.dataset.announcementId) sessionStorage.setItem(`suratika_announcement_seen_${popup.dataset.announcementId}`, '1'); popup.classList.remove('is-visible'); }
 		function openAnnouncementEditor(id) { const item = state.announcements.find(announcement => announcement.id === id); if (!item) return; editingAnnouncementId = id; document.getElementById('announcementModalTitle').textContent = 'Edit pengumuman'; document.querySelector('#announcementForm button[type="submit"]').textContent = 'Simpan perubahan'; document.getElementById('announcementTitleInput').value = item.title; document.getElementById('announcementContentInput').value = item.content; document.getElementById('announcementModalWrap').style.display = 'grid'; }
 		function resetAnnouncementForm() { editingAnnouncementId = ''; document.getElementById('announcementForm').reset(); document.getElementById('announcementModalTitle').textContent = 'Buat pengumuman'; document.querySelector('#announcementForm button[type="submit"]').textContent = 'Publikasikan'; document.getElementById('announcementModalWrap').style.display = 'none'; }
-		async function loadAnnouncements(options = {}) { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&announcements=1&t=${Date.now()}`); const result = await response.json(); if (!result.ok) throw new Error(result.error || 'API pengumuman gagal'); state.announcements = (result.announcements || []).map(normalizeAnnouncement); renderAnnouncements(); if (!options.adminOnly) showAnnouncementPopup(); } catch (error) { console.warn('Announcement sync failed', error); } }
+		async function loadAnnouncements(options = {}) { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&announcements=1&t=${Date.now()}`); const result = await readJsonResponse(response, 'Apps Script'); if (!result.ok) throw new Error(result.error || 'API pengumuman gagal'); state.announcements = (result.announcements || []).map(normalizeAnnouncement); renderAnnouncements(); if (!options.adminOnly) showAnnouncementPopup(); } catch (error) { console.warn('Announcement sync failed', error); } }
 		async function submitAnnouncementAction(action, data, successMessage) { const saved = await syncToAppsScript({ action, data }); syncToCloudflare({ action, data }); if (!saved) return showToast('Pengumuman belum tersimpan. Periksa koneksi Apps Script.'); resetAnnouncementForm(); await loadAnnouncements({ adminOnly: true }); showToast(successMessage); }
 		async function saveAnnouncement(event) { event.preventDefault(); const form = new FormData(event.target); const data = { id: editingAnnouncementId, title: String(form.get('title') || '').trim(), content: String(form.get('content') || '').trim() }; if (!data.title || !data.content) return showToast('Judul dan isi pengumuman wajib diisi.'); await submitAnnouncementAction(editingAnnouncementId ? 'updateAnnouncement' : 'createAnnouncement', data, editingAnnouncementId ? 'Pengumuman berhasil diperbarui.' : 'Pengumuman berhasil dipublikasikan.'); }
 		async function handleAnnouncementAction(event) { const button = event.target.closest('[data-announcement-action]'); if (!button) return; const id = button.dataset.announcementId; const action = button.dataset.announcementAction; if (action === 'edit') return openAnnouncementEditor(id); if (action === 'archive' && !window.confirm('Arsipkan pengumuman ini?')) return; if (action === 'delete' && !window.confirm('Hapus pengumuman ini secara permanen?')) return; await submitAnnouncementAction(`${action}Announcement`, { id }, action === 'archive' ? 'Pengumuman diarsipkan.' : 'Pengumuman dihapus.'); }
@@ -1933,7 +1954,7 @@
 		async function loadSenderNames() {
 			try {
 				const response = await fetch(`${APP_SCRIPT_URL}?api=1&senders=1&t=${Date.now()}`);
-				const result = await response.json();
+				const result = await readJsonResponse(response, 'Apps Script');
 				if (result.ok && Array.isArray(result.senderNames) && result.senderNames.length) {
 					const merged = [...new Set([...state.senderNames, ...result.senderNames.map(name => String(name).trim()).filter(Boolean)])];
 					state.senderNames = saveStoredMaster('suratika_sender_names', merged);
@@ -1946,7 +1967,7 @@
 		async function loadRecipientNames() {
 			try {
 				const response = await fetch(`${APP_SCRIPT_URL}?api=1&recipients=1&t=${Date.now()}`, { cache: 'no-store' });
-				const result = await response.json();
+				const result = await readJsonResponse(response, 'Apps Script');
 				if (result.ok && Array.isArray(result.recipientNames) && result.recipientNames.length) {
 					const merged = [...new Set([...state.recipientNames, ...result.recipientNames.map(name => String(name).trim()).filter(Boolean)])];
 					state.recipientNames = saveStoredMaster('suratika_recipient_names', merged);
@@ -3182,7 +3203,7 @@
 		function applyHeroImage(source) { applyHeroImages(source ? [source] : []); }
 		function heroImageCandidates(source) { const value = String(source || ''); const match = value.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/); return match ? [`https://lh3.googleusercontent.com/d/${match[1]}=w1600`, `https://drive.google.com/uc?export=view&id=${match[1]}`] : [value]; }
 		function applyHeroImages(sources) { const urls = [...new Set((sources || []).filter(Boolean))]; if (heroSliderTimer) clearInterval(heroSliderTimer); heroSliderUrls = urls; heroSliderIndex = 0; const hero = document.getElementById('heroArt'); const dots = document.getElementById('heroSliderDots'); dots.innerHTML = urls.map((url, index) => `<i class="${index === 0 ? 'active' : ''}" data-slide="${index}"></i>`).join(''); if (!urls.length) { hero.classList.remove('has-image'); return; } hero.classList.add('has-image'); const showSlide = index => { heroSliderIndex = index; const candidates = heroImageCandidates(urls[index]); hero.style.backgroundImage = `url("${candidates[0]}")`; const probe = new Image(); probe.onload = () => { hero.style.backgroundImage = `url("${candidates[0]}")`; }; probe.onerror = () => { if (candidates[1]) hero.style.backgroundImage = `url("${candidates[1]}")`; }; probe.src = candidates[0]; dots.querySelectorAll('i').forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === index)); }; showSlide(0); dots.querySelectorAll('i').forEach(dot => dot.addEventListener('click', () => showSlide(Number(dot.dataset.slide)))); if (urls.length > 1) heroSliderTimer = setInterval(() => showSlide((heroSliderIndex + 1) % urls.length), 4500); }
-		async function loadHeroSliderFromServer() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&hero=1&t=${Date.now()}`); const result = await response.json(); const urls = result.heroImageUrls || (result.heroImageUrl ? [result.heroImageUrl] : []); if (urls.length) { localStorage.setItem('suratika_hero_images', JSON.stringify(urls)); localStorage.setItem('suratika_hero_image', urls[0]); applyHeroImages(urls); } } catch (error) { console.warn('Hero slider sync failed', error); } }
+		async function loadHeroSliderFromServer() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&hero=1&t=${Date.now()}`); const result = await readJsonResponse(response, 'Apps Script'); const urls = result.heroImageUrls || (result.heroImageUrl ? [result.heroImageUrl] : []); if (urls.length) { localStorage.setItem('suratika_hero_images', JSON.stringify(urls)); localStorage.setItem('suratika_hero_image', urls[0]); applyHeroImages(urls); } } catch (error) { console.warn('Hero slider sync failed', error); } }
 		function applyFooterInfo(content) { const value = String(content || '').trim() || 'Informasi layanan administrasi surat UIN Ar-Raniry Banda Aceh.'; document.getElementById('publicFooterInfo').textContent = value; document.getElementById('publicFooterYear').textContent = new Date().getFullYear(); const input = document.getElementById('footerInfoInput'); if (input) input.value = value; }
 		function setupSupabaseMirrorSettings() {
 			const grid = document.querySelector('#settingsPanel .settings-grid');
@@ -3197,7 +3218,7 @@
 			const status = document.getElementById('supabaseMirrorStatus');
 			const syncButton = document.getElementById('syncSupabaseMirrorBtn');
 			fetch('/api/supabase-sync', { cache: 'no-store' })
-				.then(response => response.json())
+				.then(response => readJsonResponse(response, 'API Supabase'))
 				.then(result => {
 					status.classList.toggle('ok', result.configured === true);
 					status.innerHTML = `<i></i> ${result.configured ? 'Konfigurasi server tersedia' : 'Atur environment variable Vercel'}`;
@@ -3216,7 +3237,7 @@
 						headers: { 'Content-Type': 'application/json' },
 						body: '{}'
 					});
-					const result = await response.json();
+					const result = await readJsonResponse(response, 'API Supabase');
 					if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
 					status.classList.add('ok');
 					status.innerHTML = `<i></i> ${result.syncedRows} surat tersinkron`;
@@ -3235,7 +3256,7 @@
 		function updatePublicDistributionTotal() { const summary = document.getElementById('publicDistributionSummary'); if (!summary) return; let totalCard = document.getElementById('publicDistributionTotal'); if (!totalCard) { totalCard = document.createElement('div'); totalCard.id = 'publicDistributionTotal'; totalCard.className = 'public-distribution-summary-item total'; summary.prepend(totalCard); } const total = state.distributions.length; totalCard.innerHTML = `<strong>${total}</strong><span>Total seluruh distribusi</span>`; }
 		function setupPublicDistributionTotal() { const target = document.getElementById('publicDistributionRows'); if (!target) return; const observer = new MutationObserver(updatePublicDistributionTotal); observer.observe(target, { childList: true, subtree: true }); updatePublicDistributionTotal(); }
 		function restoreLettersSnapshot() { try { const snapshot = JSON.parse(localStorage.getItem('suratika_letters_snapshot') || 'null'); if (!snapshot || !Array.isArray(snapshot.letters)) return false; state.letters = snapshot.letters.map(normalizeLetter); state.distributions = (snapshot.distributions || []).map(normalizeDistribution); state.senderNames = [...new Set((snapshot.senderNames || []).map(name => String(name).trim()).filter(Boolean))]; state.recipientNames = [...new Set((snapshot.recipientNames || []).map(name => String(name).trim()).filter(Boolean))]; renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); updateSenderSuggestions(); updateRecipientSuggestions(); updateStats(); return true; } catch (error) { console.warn('Snapshot data gagal dipulihkan', error); return false; } }
-		async function loadFooterInfo() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&footer=1&t=${Date.now()}`); const result = await response.json(); if (result.ok && typeof result.footerInfo === 'string') { localStorage.setItem('suratika_footer_info', result.footerInfo); applyFooterInfo(result.footerInfo); } } catch (error) { applyFooterInfo(localStorage.getItem('suratika_footer_info')); } }
+		async function loadFooterInfo() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&footer=1&t=${Date.now()}`); const result = await readJsonResponse(response, 'Apps Script'); if (result.ok && typeof result.footerInfo === 'string') { localStorage.setItem('suratika_footer_info', result.footerInfo); applyFooterInfo(result.footerInfo); } } catch (error) { console.warn('Footer info sync failed:', error); applyFooterInfo(localStorage.getItem('suratika_footer_info')); } }
 		function applyPublicGradient(colorOne, colorTwo, direction) { const gradient = `linear-gradient(${direction}, ${colorOne}, ${colorTwo})`; document.getElementById('publicScreen').style.background = gradient; document.getElementById('gradientPreview').style.background = gradient; }
 		function loadSavedGradient() { const colorOne = localStorage.getItem('suratika_gradient_one') || '#f7f8f2'; const colorTwo = localStorage.getItem('suratika_gradient_two') || '#dcefe3'; const direction = localStorage.getItem('suratika_gradient_direction') || '135deg'; document.getElementById('gradientColorOne').value = colorOne; document.getElementById('gradientColorTwo').value = colorTwo; document.getElementById('gradientDirection').value = direction; applyPublicGradient(colorOne, colorTwo, direction); }
 		function ensureFallbackLetters() {
@@ -3252,7 +3273,89 @@
 			}
 			state.letters = demoLetters.map(normalizeLetter);
 		}
-		async function loadLetters(options = {}) { const requestId = ++lettersRequestId; try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&fresh=1&t=${Date.now()}`, { cache: 'no-store' }); const result = await response.json(); if (requestId !== lettersRequestId) return; if (!result.ok) throw new Error(result.error || 'API gagal'); state.letters = (result.data || []).map(normalizeLetter); state.distributions = (result.distributions || []).map(normalizeDistribution); state.senderNames = [...new Set((result.senderNames || []).map(name => String(name).trim()).filter(Boolean))]; if (!state.letters.length) ensureFallbackLetters(); syncDistributionBaseline(state.distributions, Boolean(options.notify)); renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); updateSenderSuggestions(); updateRecipientSuggestions(); updateStats(); if (result.heroImageUrl) { localStorage.setItem('suratika_hero_image', result.heroImageUrl); applyHeroImage(result.heroImageUrl); } if (result.gradient) { const { colorOne, colorTwo, direction } = result.gradient; localStorage.setItem('suratika_gradient_one', colorOne); localStorage.setItem('suratika_gradient_two', colorTwo); localStorage.setItem('suratika_gradient_direction', direction); document.getElementById('gradientColorOne').value = colorOne; document.getElementById('gradientColorTwo').value = colorTwo; document.getElementById('gradientDirection').value = direction; applyPublicGradient(colorOne, colorTwo, direction); } document.getElementById('lastSync').textContent = `Terakhir diperbarui ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`; document.getElementById('connectionStatus').className = 'connection ok'; document.getElementById('connectionStatus').innerHTML = '<i></i> Terhubung'; } catch (error) { if (requestId !== lettersRequestId) return; let loadedFromCloudflare = false; try { const cfConfig = getCloudflareConfig(); const cfRes = await fetch(cfConfig.url || '/api/cloudflare', { cache: 'no-store' }); const cfJson = await cfRes.json(); if (cfJson.ok && cfJson.data) { if (Array.isArray(cfJson.data.letters) && cfJson.data.letters.length) { state.letters = cfJson.data.letters.map(normalizeLetter); loadedFromCloudflare = true; } if (Array.isArray(cfJson.data.distributions) && cfJson.data.distributions.length) { state.distributions = cfJson.data.distributions.map(normalizeDistribution); } if (Array.isArray(cfJson.data.senderNames) && cfJson.data.senderNames.length) { state.senderNames = saveStoredMaster('suratika_sender_names', cfJson.data.senderNames); } if (Array.isArray(cfJson.data.recipientNames) && cfJson.data.recipientNames.length) { state.recipientNames = saveStoredMaster('suratika_recipient_names', cfJson.data.recipientNames); } } } catch (cfErr) {} if (!state.letters.length) ensureFallbackLetters(); renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); updateSenderSuggestions(); updateRecipientSuggestions(); updateStats(); document.getElementById('lastSync').textContent = loadedFromCloudflare ? 'Data dimuat dari Cloudflare' : 'Gagal membaca Spreadsheet'; if (!options.silent && !loadedFromCloudflare) showToast('Data Spreadsheet belum dapat dimuat. Periksa deployment Apps Script.'); } }
+		async function loadLetters(options = {}) {
+			const requestId = ++lettersRequestId;
+			let sourceError;
+			try {
+				const response = await fetch(`${APP_SCRIPT_URL}?api=1&fresh=1&t=${Date.now()}`, { cache: 'no-store' });
+				const result = await readJsonResponse(response, 'Apps Script');
+				if (requestId !== lettersRequestId) return;
+				if (!result.ok) throw new Error(result.error || 'Apps Script gagal memuat data.');
+				state.letters = (result.data || []).map(normalizeLetter);
+				state.distributions = (result.distributions || []).map(normalizeDistribution);
+				state.senderNames = [...new Set((result.senderNames || []).map(name => String(name).trim()).filter(Boolean))];
+				if (!state.letters.length) ensureFallbackLetters();
+				syncDistributionBaseline(state.distributions, Boolean(options.notify));
+				renderLetters();
+				renderPublicArchive();
+				renderArchive();
+				renderLatestDistribution();
+				renderPublicDistribution();
+				renderDistributions();
+				updateSenderSuggestions();
+				updateRecipientSuggestions();
+				updateStats();
+				if (result.heroImageUrl) {
+					localStorage.setItem('suratika_hero_image', result.heroImageUrl);
+					applyHeroImage(result.heroImageUrl);
+				}
+				if (result.gradient) {
+					const { colorOne, colorTwo, direction } = result.gradient;
+					localStorage.setItem('suratika_gradient_one', colorOne);
+					localStorage.setItem('suratika_gradient_two', colorTwo);
+					localStorage.setItem('suratika_gradient_direction', direction);
+					document.getElementById('gradientColorOne').value = colorOne;
+					document.getElementById('gradientColorTwo').value = colorTwo;
+					document.getElementById('gradientDirection').value = direction;
+					applyPublicGradient(colorOne, colorTwo, direction);
+				}
+				document.getElementById('lastSync').textContent = `Terakhir diperbarui ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
+				document.getElementById('connectionStatus').className = 'connection ok';
+				document.getElementById('connectionStatus').innerHTML = '<i></i> Terhubung';
+				return;
+			} catch (error) {
+				sourceError = error;
+			}
+			if (requestId !== lettersRequestId) return;
+			let loadedFromCloudflare = false;
+			try {
+				const cfConfig = getCloudflareConfig();
+				const cfRes = await fetch(cfConfig.url || '/api/cloudflare', { cache: 'no-store' });
+				const cfJson = await cfRes.json();
+				if (cfJson.ok && cfJson.data) {
+					if (Array.isArray(cfJson.data.letters) && cfJson.data.letters.length) {
+						state.letters = cfJson.data.letters.map(normalizeLetter);
+						loadedFromCloudflare = true;
+					}
+					if (Array.isArray(cfJson.data.distributions) && cfJson.data.distributions.length) {
+						state.distributions = cfJson.data.distributions.map(normalizeDistribution);
+					}
+					if (Array.isArray(cfJson.data.senderNames) && cfJson.data.senderNames.length) {
+						state.senderNames = saveStoredMaster('suratika_sender_names', cfJson.data.senderNames);
+					}
+					if (Array.isArray(cfJson.data.recipientNames) && cfJson.data.recipientNames.length) {
+						state.recipientNames = saveStoredMaster('suratika_recipient_names', cfJson.data.recipientNames);
+					}
+				}
+			} catch (cfErr) {
+				console.warn('Fallback Cloudflare gagal:', cfErr);
+			}
+			if (!state.letters.length) ensureFallbackLetters();
+			renderLetters();
+			renderPublicArchive();
+			renderArchive();
+			renderLatestDistribution();
+			renderPublicDistribution();
+			renderDistributions();
+			updateSenderSuggestions();
+			updateRecipientSuggestions();
+			updateStats();
+			document.getElementById('lastSync').textContent = loadedFromCloudflare ? 'Data dimuat dari Cloudflare' : 'Gagal membaca Spreadsheet';
+			if (!options.silent && !loadedFromCloudflare) {
+				console.error('Spreadsheet gagal dimuat:', sourceError);
+				showToast(`Data Spreadsheet belum dapat dimuat: ${sourceError.message}`);
+			}
+		}
 		const fetchLettersFromServer = loadLetters;
 		loadLetters = async options => {
 			await fetchLettersFromServer(options);
