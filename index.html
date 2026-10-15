@@ -1794,6 +1794,12 @@
 				if (/^\s*forbidden\.?\s*$/i.test(body)) {
 					throw new Error(`${serviceName} menolak akses (Forbidden). Gunakan URL Web App terbaru dan pastikan akses deployment Apps Script disetel ke Anyone.`);
 				}
+				if (response.status === 403) {
+					throw new Error(`${serviceName} diblokir sebelum API mengembalikan JSON (HTTP 403). Periksa Vercel Deployment Protection dan pastikan endpoint /api/admin/login ikut ter-deploy.`);
+				}
+				if (response.status === 404 && serviceName === 'Login admin') {
+					throw new Error('Endpoint login tidak ditemukan di deployment Vercel. Deploy ulang dari direktori proyek yang berisi vercel.json dan folder api/.');
+				}
 				throw new Error(`${serviceName} tidak mengembalikan JSON yang valid (HTTP ${response.status}).`);
 			}
 			if (!response.ok) throw new Error(result.error || `${serviceName} gagal (HTTP ${response.status}).`);
@@ -3776,7 +3782,7 @@
 		}
 		async function restoreAdminSession() {
 			try {
-				const response = await fetch('/api/admin/session', { cache: 'no-store', credentials: 'same-origin' });
+				const response = await fetch('/api/admin-session', { cache: 'no-store', credentials: 'same-origin' });
 				if (response.status === 401) return;
 				const result = await readJsonResponse(response, 'Sesi admin');
 				if (result.ok) await enterAdminSession(result.role);
@@ -3786,7 +3792,7 @@
 		}
 		async function logoutAdmin() {
 			try {
-				const response = await fetch('/api/admin/logout', {
+				const response = await fetch('/api/admin-logout', {
 					method: 'POST',
 					credentials: 'same-origin',
 					headers: { 'Content-Type': 'application/json' },
@@ -3890,7 +3896,7 @@
 			const submitButton = document.querySelector('#loginForm button[type="submit"]');
 			if (submitButton) submitButton.disabled = true;
 			try {
-				const response = await fetch('/api/admin/login', {
+				const response = await fetch('/api/admin-login', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					credentials: 'same-origin',
