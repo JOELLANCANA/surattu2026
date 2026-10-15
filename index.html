@@ -1795,7 +1795,7 @@
 					throw new Error(`${serviceName} menolak akses (Forbidden). Gunakan URL Web App terbaru dan pastikan akses deployment Apps Script disetel ke Anyone.`);
 				}
 				if (response.status === 403) {
-					throw new Error(`${serviceName} diblokir sebelum API mengembalikan JSON (HTTP 403). Periksa Vercel Deployment Protection dan pastikan endpoint /api/admin/login ikut ter-deploy.`);
+					throw new Error(`${serviceName} diblokir sebelum API mengembalikan JSON (HTTP 403). Periksa Vercel Deployment Protection dan pastikan endpoint /api/admin-login ikut ter-deploy.`);
 				}
 				if (response.status === 404 && serviceName === 'Login admin') {
 					throw new Error('Endpoint login tidak ditemukan di deployment Vercel. Deploy ulang dari direktori proyek yang berisi vercel.json dan folder api/.');
