@@ -1543,7 +1543,7 @@
 				<section class="panel" id="announcementsPanel"><div class="panel-head"><div><h2>Pengumuman</h2><p class="subtitle">Terbitkan informasi yang tampil sebagai popup di beranda publik.</p></div><button class="primary-btn" id="openAnnouncementModal">＋ &nbsp;Buat pengumuman</button></div><div class="announcement-admin-list"><table class="announcement-admin-table"><thead><tr><th>Pengumuman</th><th>Terbit</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="announcementAdminRows"></tbody></table></div></section>
 				<section class="panel" id="reportsPanel"><div class="panel-head"><div><h2>Laporan dan rekapitulasi</h2><p class="subtitle">Cetak laporan surat atau distribusi berdasarkan periode.</p></div></div><div class="report-controls"><label>Jenis laporan<select id="reportDataType"><option value="letters">Surat masuk dan keluar</option><option value="distribution">Distribusi surat</option></select></label><label>Jenis periode<select id="reportPeriod"><option value="month">Bulanan</option><option value="semester">Semesteran</option></select></label><label>Tahun<input id="reportYear" type="number" min="2000" max="2100"></label><label>Bulan<select id="reportMonth"><option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option><option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></label><label>Semester<select id="reportSemester"><option value="1">Semester I (Januari - Juni)</option><option value="2">Semester II (Juli - Desember)</option></select></label></div><div class="report-actions"><button class="outline-btn" id="printReport">▣ Cetak laporan</button></div><div class="report-paper" id="reportPaper"></div></section>
 				<section class="panel" id="archivePanel"><div class="panel-head"><div><h2>Arsip surat</h2><p class="subtitle">Arsip tersusun berdasarkan bulan dan tahun surat.</p></div></div><div class="archive-admin-controls"><div class="search"><span>⌕</span><input id="archiveSearch" placeholder="Cari nomor, perihal, atau pengirim..." aria-label="Cari arsip surat"></div><select id="archiveTypeFilter" aria-label="Filter jenis arsip"><option value="all">Semua jenis</option><option value="in">Surat masuk</option><option value="out">Surat keluar</option></select><select id="archiveYearFilter" aria-label="Filter tahun arsip"><option value="all">Semua tahun</option></select></div><div class="archive-admin-body" id="archiveGroups"></div></section>
-				<section class="panel" id="distributionPanel"><div class="panel-head"><div><h2>Distribusi Surat</h2><p class="subtitle">Baca saja dari Spreadsheet eksternal, tidak dicatat oleh sistem.</p></div></div><div class="distribution-controls"><div class="search"><span>⌕</span><input id="distributionSearch" placeholder="Cari surat, penerima, atau tujuan..." aria-label="Cari distribusi surat"></div><select id="distributionStatusFilter" aria-label="Filter status distribusi"><option value="all">Semua status</option></select></div><div class="distribution-table-wrap"><table class="distribution-table"><thead><tr><th>No.</th><th>Nomor surat</th><th>Tanggal</th><th>Perihal</th><th>Penerima / tujuan</th><th>Status</th></tr></thead><tbody id="distributionRows"></tbody></table></div></section>
+				<section class="panel" id="distributionPanel"><div class="panel-head"><div><h2>Distribusi Surat</h2><p class="subtitle">Data dikelola langsung pada Spreadsheet distribusi.</p></div></div><div class="distribution-controls"><div class="search"><span>⌕</span><input id="distributionSearch" placeholder="Cari surat, penerima, atau tujuan..." aria-label="Cari distribusi surat"></div><select id="distributionStatusFilter" aria-label="Filter status distribusi"><option value="all">Semua status</option></select></div><div class="distribution-table-wrap"><table class="distribution-table"><thead><tr><th>No.</th><th>Nomor surat</th><th>Tanggal</th><th>Perihal</th><th>Penerima / tujuan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="distributionRows"></tbody></table></div></section>
 			</main>
 			<nav class="admin-bottom-nav" id="adminBottomNav" aria-label="Navigasi Cepat Mobile">
 				<button class="bottom-tab-btn active" data-bottom-view="dashboard" type="button"><span class="icon">⌂</span><span>Beranda</span></button>
@@ -1604,6 +1604,8 @@
 				<input type="hidden" id="editLetterOriginalNumber" name="originalNumber">
 				<input type="hidden" id="editLetterOriginalType" name="originalType">
 				<input type="hidden" id="editLetterId" name="id">
+				<input type="hidden" id="editLetterSourceSheet" name="sourceSheet">
+				<input type="hidden" id="editLetterSourceRow" name="sourceRow">
 				<div class="form-grid">
 					<div class="field">
 						<label for="editLetterTypeSelect">Jenis Surat</label>
@@ -1848,7 +1850,7 @@
 		function valueOf(item, names) { const key = Object.keys(item).find(name => { const normalizedName = name.toLowerCase().replace(/[ ._\/-]/g, ''); return names.some(candidate => String(candidate).toLowerCase().replace(/[ ._\/-]/g, '') === normalizedName); }); return key ? item[key] : ''; }
 		function normalizeLetter(item) {
 			const typeValue = String(valueOf(item, ['type', 'jenis', 'tipe'])).toLowerCase();
-			const sourceSheet = String(valueOf(item, ['sourceSheet', 'sheetName', 'source'])).toLowerCase().trim();
+			const sourceSheet = String(valueOf(item, ['sourceSheet', 'sheetName', 'source'])).trim();
 			const statusValue = String(valueOf(item, ['status', 'state'])).toLowerCase();
 			const type = /surat\s*keluar|outgoing/.test(sourceSheet) ? 'out'
 				: /surat\s*masuk|incoming/.test(sourceSheet) ? 'in'
@@ -1867,10 +1869,38 @@
 				status,
 				attachmentUrl: valueOf(item, ['attachmenturl', 'lampiran']),
 				notes: valueOf(item, ['notes', 'catatan', 'keterangan', 'disposisi']) || '',
-				sourceSheet: valueOf(item, ['sourceSheet', 'sheetName', 'source']) || ''
+				sourceSheet: String(valueOf(item, ['sourceSheet', 'sheetName', 'source']) || ''),
+				sourceRow: Number(valueOf(item, ['sourceRow', 'row'])) || 0
 			};
 		}
-		function normalizeDistribution(item) { const status = valueOf(item, ['status', 'keterangan', 'state', 'aktif']) || 'Aktif'; return { sequence: valueOf(item, ['sequence', 'no', 'nomorurut', 'nomor urut', 'urut']), number: valueOf(item, ['number', 'nomor', 'nomorsurat', 'nomor surat']), date: formatDisplayDate(valueOf(item, ['date', 'tanggal', 'tanggaldistribusi', 'tanggal terima', 'tanggalterima', 'tgl', 'createdat'])) || '-', subject: valueOf(item, ['subject', 'perihal', 'judul', 'uraian']), unitRecipient: valueOf(item, ['unitrecipient', 'unitpenerima', 'penerimaunit', 'unit', 'bagian', 'instansi']), recipientName: valueOf(item, ['recipientname', 'namapenerima', 'penerimanama', 'nama penerima']), position: valueOf(item, ['position', 'jabatan', 'pekerjaan']), recipient: valueOf(item, ['recipient', 'penerima', 'tujuan', 'didistribusikankepada', 'unitpenerima', 'disposisi']), status }; }
+		function normalizeDistribution(item) { const status = valueOf(item, ['status', 'keterangan', 'state', 'aktif']) || 'Aktif'; return { sequence: valueOf(item, ['sequence', 'no', 'nomorurut', 'nomor urut', 'urut']), number: valueOf(item, ['number', 'nomor', 'nomorsurat', 'nomor surat']), date: formatDisplayDate(valueOf(item, ['date', 'tanggal', 'tanggaldistribusi', 'tanggal terima', 'tanggalterima', 'tgl', 'createdat'])) || '-', subject: valueOf(item, ['subject', 'perihal', 'judul', 'uraian']), unitRecipient: valueOf(item, ['unitrecipient', 'unitpenerima', 'penerimaunit', 'unit', 'bagian', 'instansi']), recipientName: valueOf(item, ['recipientname', 'namapenerima', 'penerimanama', 'nama penerima']), position: valueOf(item, ['position', 'jabatan', 'pekerjaan']), recipient: valueOf(item, ['recipient', 'penerima', 'tujuan', 'didistribusikankepada', 'disposisi']), status, sourceSheet: String(valueOf(item, ['sourceSheet', 'sheetName', 'source']) || ''), sourceRow: Number(valueOf(item, ['sourceRow', 'row'])) || 0 }; }
+		function sameSourceRow(first, second) { return Boolean(first && second && first.sourceRow && second.sourceRow && first.sourceSheet === second.sourceSheet && Number(first.sourceRow) === Number(second.sourceRow)); }
+		function findLetterByIdentity(identity) { if (identity?.sourceRow) return state.letters.find(item => sameSourceRow(item, identity)); return state.letters.find(item => (!identity.type || item.type === identity.type) && item.number === identity.number); }
+		function findDistributionByIdentity(identity) { return state.distributions.find(item => sameSourceRow(item, identity)); }
+		function sourceDataAttributes(item) { return `data-num="${escapeHtml(item.number)}" data-type="${escapeHtml(item.type || '')}" data-source-sheet="${escapeHtml(item.sourceSheet || '')}" data-source-row="${escapeHtml(item.sourceRow || '')}"`; }
+		async function fetchFreshSheetData() {
+			const response = await fetch(`${APP_SCRIPT_URL}?api=1&fresh=1&t=${Date.now()}`, { cache: 'no-store' });
+			const result = await readJsonResponse(response, 'Apps Script');
+			if (!result.ok) throw new Error(result.error || 'Gagal membaca ulang Spreadsheet.');
+			return result;
+		}
+		async function persistSheetMutation(action, data, verify) {
+			if (!APP_SCRIPT_URL) return false;
+			try {
+				const sent = await syncToAppsScript({ action, data });
+				if (!sent) return false;
+				const result = await fetchFreshSheetData();
+				if (!verify(result)) return false;
+				state.letters = (result.data || []).map(normalizeLetter);
+				state.distributions = (result.distributions || []).map(normalizeDistribution);
+				renderLetters(); renderPublicArchive(); renderArchive(); renderLatestDistribution(); renderPublicDistribution(); renderDistributions(); updateStats();
+				localStorage.setItem('suratika_letters_snapshot', JSON.stringify({ letters: state.letters, distributions: state.distributions, senderNames: state.senderNames, recipientNames: state.recipientNames }));
+				return true;
+			} catch (error) {
+				console.error(`Mutasi ${action} gagal diverifikasi:`, error);
+				return false;
+			}
+		}
 		function escapeHtml(value) { return String(value ?? '-').replace(/[&<>"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character])); }
 		function distributionDate(item) { return reportDate({ date: item.date }); }
 		function distributionSequence(item) { const value = String(item.sequence || '').replace(/[^\d-]/g, ''); return value ? Number(value) : 0; }
@@ -1881,10 +1911,86 @@
 		function distributionKey(item) { return [item.number, item.date, item.subject, item.recipient, item.status].map(value => String(value || '').trim().toLowerCase()).join('|'); }
 		function showDistributionPopup(item, count) { const message = count > 1 ? `${count} distribusi baru masuk. Terbaru: ` : ''; document.getElementById('liveDistributionMessage').innerHTML = `${message}<b>${escapeHtml(item.number || item.subject || 'Surat baru')}</b> dikirim ke ${escapeHtml(item.recipient || 'penerima belum tercatat')}.`; document.getElementById('liveDistributionPopup').style.display = 'block'; }
 		function syncDistributionBaseline(items, notify) { const newItems = []; items.forEach(item => { const key = distributionKey(item); if (notify && !distributionKeys.has(key)) newItems.push(item); distributionKeys.add(key); }); if (newItems.length) showDistributionPopup(newItems[newItems.length - 1], newItems.length); }
-		function distributionRows(items, compact) { return items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item.number)}</td><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.subject)}</td><td>${escapeHtml(item.recipient)}</td><td><span class="badge ${distributionStatusClass(item.status)}">${escapeHtml(item.status)}</span></td></tr>`).join(''); }
+		function distributionRows(items, compact) { const canManage = ['super_admin', 'admin_distribution'].includes(getCurrentAdmin().id); return items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item.number)}</td><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.subject)}</td><td>${escapeHtml(item.recipientName || item.recipient || item.unitRecipient)}</td><td><span class="badge ${distributionStatusClass(item.status)}">${escapeHtml(item.status)}</span></td><td>${canManage ? `<div class="letter-row-actions"><button type="button" class="letter-action-btn print-btn" data-distribution-action="print" ${sourceDataAttributes(item)} title="Cetak bukti distribusi">🖨️ Cetak</button><button type="button" class="letter-action-btn edit-btn" data-distribution-action="edit" ${sourceDataAttributes(item)} title="Edit distribusi">✏️ Edit</button>${isActiveDistribution(item) ? '' : `<button type="button" class="letter-action-btn" data-distribution-action="republish" ${sourceDataAttributes(item)} title="Publikasikan ulang">Publikasikan ulang</button>`}<button type="button" class="letter-action-btn delete-btn" data-distribution-action="delete" ${sourceDataAttributes(item)} title="Hapus distribusi">🗑️ Hapus</button></div>` : '—'}</td></tr>`).join(''); }
+		function distributionIdentityFromElement(element) { return { number: element.dataset.num, sourceSheet: element.dataset.sourceSheet, sourceRow: Number(element.dataset.sourceRow) }; }
+		function printDistributionProof(item) {
+			const printWindow = window.open('', '_blank', 'width=850,height=700');
+			if (!printWindow) return showToast('Izinkan pop-up browser untuk mencetak bukti distribusi.');
+			const fields = [['Nomor surat', item.number], ['Tanggal distribusi', item.date], ['Perihal', item.subject], ['Unit tujuan', item.unitRecipient], ['Nama penerima', item.recipientName], ['Jabatan', item.position], ['Penerima / tujuan', item.recipient], ['Status', item.status]];
+			printWindow.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Bukti Distribusi ${escapeHtml(item.number)}</title><style>body{font:15px Arial,sans-serif;color:#18231d;margin:48px}h1{text-align:center;font-size:22px}p{text-align:center;color:#52635a}table{width:100%;border-collapse:collapse;margin-top:30px}td{padding:11px;border:1px solid #cbd5ce}td:first-child{width:32%;font-weight:bold;background:#f2f6f3}.sign{margin:55px 0 0 auto;width:230px;text-align:center}.sign div{height:70px}</style></head><body><h1>BUKTI DISTRIBUSI SURAT</h1><p>Dokumen administrasi surat</p><table>${fields.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value || '-')}</td></tr>`).join('')}</table><div class="sign">Penerima,<div></div>( ____________________ )</div><script>window.onload=()=>window.print()<\/script></body></html>`);
+			printWindow.document.close();
+		}
+		function openDistributionEdit(item) {
+			if (!item?.sourceSheet || !item?.sourceRow) return showToast('Identitas baris distribusi tidak tersedia. Muat ulang data sebelum mengedit.');
+			let wrap = document.getElementById('distributionEditModalWrap');
+			if (!wrap) {
+				wrap = document.createElement('div');
+				wrap.className = 'modal-wrap';
+				wrap.id = 'distributionEditModalWrap';
+				wrap.innerHTML = `<form class="modal" id="distributionEditForm" style="width:min(620px, 100%); max-height:88vh; overflow-y:auto;"><div class="modal-head"><div><h2>Edit Distribusi</h2><p class="subtitle">Perubahan disimpan ke Spreadsheet distribusi.</p></div><button type="button" class="close" id="closeDistributionEdit">×</button></div><input type="hidden" name="sourceSheet"><input type="hidden" name="sourceRow"><input type="hidden" name="originalNumber"><div class="form-grid"><div class="field"><label>Nomor surat<input name="number" required></label></div><div class="field"><label>Tanggal<input name="date" required></label></div><div class="field full"><label>Perihal<input name="subject" required></label></div><div class="field"><label>Unit tujuan<input name="unitRecipient"></label></div><div class="field"><label>Nama penerima<input name="recipientName"></label></div><div class="field"><label>Jabatan<input name="position"></label></div><div class="field"><label>Penerima / tujuan<input name="recipient"></label></div><div class="field"><label>Status<input name="status" required></label></div></div><div class="modal-foot"><button type="button" class="outline-btn" id="cancelDistributionEdit">Batal</button><button type="submit" class="primary-btn">Simpan perubahan</button></div></form>`;
+				document.body.appendChild(wrap);
+				const close = () => { wrap.style.display = 'none'; };
+				wrap.querySelector('#closeDistributionEdit').addEventListener('click', close);
+				wrap.querySelector('#cancelDistributionEdit').addEventListener('click', close);
+				wrap.addEventListener('click', event => { if (event.target === wrap) close(); });
+				wrap.querySelector('form').addEventListener('submit', async event => {
+					event.preventDefault();
+					const form = event.currentTarget;
+					const data = Object.fromEntries(new FormData(form).entries());
+					data.sourceRow = Number(data.sourceRow);
+					const saved = await persistSheetMutation('updateDistribution', data, record => {
+						const match = (record.distributions || []).map(normalizeDistribution).find(row => sameSourceRow(row, data));
+						const expectedDate = formatDisplayDate(data.date) || String(data.date || '-').trim();
+						return Boolean(match &&
+							match.number === String(data.number || '').trim() &&
+							match.date === expectedDate &&
+							match.subject === String(data.subject || '').trim() &&
+							match.unitRecipient === String(data.unitRecipient || '').trim() &&
+							match.recipientName === String(data.recipientName || '').trim() &&
+							match.position === String(data.position || '').trim() &&
+							match.recipient === String(data.recipient || '').trim() &&
+							match.status === String(data.status || '').trim());
+					});
+					if (!saved) return showToast('Perubahan distribusi belum terverifikasi di Spreadsheet. Pastikan Apps Script sudah diperbarui lalu coba kembali.');
+					close();
+					showToast(`Distribusi "${data.number}" berhasil diperbarui.`);
+				});
+			}
+			const form = wrap.querySelector('form');
+			for (const key of ['sourceSheet', 'sourceRow', 'originalNumber', 'number', 'date', 'subject', 'unitRecipient', 'recipientName', 'position', 'recipient', 'status']) {
+				if (form.elements[key]) form.elements[key].value = item[key] ?? '';
+			}
+			wrap.style.display = 'grid';
+		}
+		async function handleDistributionAction(action, identity) {
+			if (!['super_admin', 'admin_distribution'].includes(getCurrentAdmin().id)) return showToast('Akun Anda tidak memiliki izin mengelola distribusi.');
+			const item = findDistributionByIdentity(identity);
+			if (!item) return showToast('Data distribusi tidak ditemukan. Muat ulang data lalu coba kembali.');
+			if (action === 'print') return printDistributionProof(item);
+			if (action === 'edit') return openDistributionEdit(item);
+			if (action === 'republish') {
+				const saved = await persistSheetMutation('republishDistribution', item, record => {
+					const match = (record.distributions || []).map(normalizeDistribution).find(row => sameSourceRow(row, item));
+					return Boolean(match && isActiveDistribution(match));
+				});
+				if (!saved) return showToast('Publikasi ulang distribusi belum terverifikasi di Spreadsheet.');
+				return showToast(`Distribusi "${item.number}" berhasil dipublikasikan ulang.`);
+			}
+			if (action === 'delete') {
+				if (!window.confirm(`Hapus distribusi "${item.number}" untuk "${item.recipientName || item.recipient || item.unitRecipient}"?`)) return;
+				const signature = row => [row.number, row.date, row.subject, row.unitRecipient, row.recipientName, row.position, row.recipient, row.status].map(value => String(value || '').trim()).join('|');
+				const originalCount = state.distributions.filter(row => signature(row) === signature(item)).length;
+				const saved = await persistSheetMutation('deleteDistribution', item, record => {
+					const remaining = (record.distributions || []).map(normalizeDistribution).filter(row => signature(row) === signature(item)).length;
+					return remaining === originalCount - 1;
+				});
+				if (!saved) return showToast('Penghapusan distribusi belum terverifikasi di Spreadsheet.');
+				showToast(`Distribusi "${item.number}" berhasil dihapus.`);
+			}
+		}
 		function renderLatestDistribution() { const latest = [...state.distributions].filter(isActiveDistribution).sort((first, second) => (distributionDate(second) || 0) - (distributionDate(first) || 0)).slice(0, 10); const target = document.getElementById('latestDistributionRows'); if (!latest.length) { target.innerHTML = '<div class="distribution-empty">Belum ada surat distribusi aktif dari Spreadsheet.</div>'; return; } const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']; const groups = latest.reduce((result, item) => { const date = distributionDate(item); const key = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : 'unknown'; (result[key] ||= []).push(item); return result; }, {}); const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`; const groupKeys = Object.keys(groups).sort((first, second) => second.localeCompare(first)); const openKey = groupKeys.includes(currentMonthKey) ? currentMonthKey : groupKeys[0]; target.innerHTML = groupKeys.map(key => { const items = groups[key]; const [year, month] = key.split('-'); const title = key === 'unknown' ? 'Tanggal belum tersedia' : `${monthNames[Number(month) - 1]} ${year}`; const rows = items.map((item, index) => `<tr><td>${index + 1}</td><td><strong>${escapeHtml(item.number || '-')}</strong></td><td>${escapeHtml(item.date || '-')}</td><td>${escapeHtml(item.subject || '-')}</td><td>${escapeHtml(item.unitRecipient || item.recipient || '-')}</td><td>${escapeHtml(item.recipientName || '-')}</td><td><span class="badge ${distributionStatusClass(item.status)}">${escapeHtml(item.status)}</span></td></tr>`).join(''); const collapsed = key !== openKey || state.collapsedDistributionMonths.has(key); return `<section class="distribution-month${collapsed ? ' is-collapsed' : ''}" data-month="${key}"><button class="distribution-month-toggle" type="button" aria-expanded="${!collapsed}"><span><span class="chevron">▾</span>${title}</span><span>${items.length} surat</span></button><div class="distribution-month-content"><table class="latest-distribution-table"><thead><tr><th>No.</th><th>Nomor surat</th><th>Tanggal</th><th>Perihal</th><th>Unit penerima</th><th>Nama penerima</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></section>`; }).join(''); target.querySelectorAll('.distribution-month-toggle').forEach(button => button.addEventListener('click', () => { const group = button.closest('.distribution-month'); const actualKey = group.dataset.month; const collapsed = group.classList.toggle('is-collapsed'); if (collapsed) state.collapsedDistributionMonths.add(actualKey); else state.collapsedDistributionMonths.delete(actualKey); button.setAttribute('aria-expanded', String(!collapsed)); })); }
 		function renderPublicDistribution() { const latest = [...state.distributions].filter(isActiveDistribution).sort((first, second) => (distributionDate(second) || 0) - (distributionDate(first) || 0)).slice(0, 10); const target = document.getElementById('publicDistributionRows'); if (!latest.length) { target.innerHTML = '<div class="distribution-empty">Belum ada distribusi aktif dari Spreadsheet.</div>'; return; } const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']; const groups = latest.reduce((result, item) => { const date = distributionDate(item); const key = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : 'unknown'; (result[key] ||= []).push(item); return result; }, {}); const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`; const groupKeys = Object.keys(groups).sort((first, second) => second.localeCompare(first)); const openKey = groupKeys.includes(currentMonthKey) ? currentMonthKey : groupKeys[0]; target.innerHTML = groupKeys.map(key => { const items = groups[key]; const [year, month] = key.split('-'); const title = key === 'unknown' ? 'Tanggal belum tersedia' : `${monthNames[Number(month) - 1]} ${year}`; const rows = items.map((item, index) => `<tr><td>${index + 1}</td><td>${escapeHtml(item.number || '-')}</td><td>${escapeHtml(item.date || '-')}</td><td>${escapeHtml(item.subject || '-')}</td><td>${escapeHtml(item.unitRecipient || item.recipient || '-')}</td><td>${escapeHtml(item.recipientName || '-')}</td><td><span class="badge ${distributionStatusClass(item.status)}">${escapeHtml(item.status)}</span></td></tr>`).join(''); const collapsed = key !== openKey || state.publicCollapsedDistributionMonths.has(key); return `<section class="distribution-month${collapsed ? ' is-collapsed' : ''}" data-month="${key}"><button class="distribution-month-toggle" type="button" aria-expanded="${!collapsed}"><span><span class="chevron">▾</span>${title}</span><span>${items.length} surat</span></button><div class="distribution-month-content"><table class="latest-distribution-table"><thead><tr><th>No.</th><th>Nomor surat</th><th>Tanggal</th><th>Perihal</th><th>Unit penerima</th><th>Nama penerima</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></section>`; }).join(''); target.querySelectorAll('.distribution-month-toggle').forEach(button => button.addEventListener('click', () => { const group = button.closest('.distribution-month'); const actualKey = group.dataset.month; const collapsed = group.classList.toggle('is-collapsed'); if (collapsed) state.publicCollapsedDistributionMonths.add(actualKey); else state.publicCollapsedDistributionMonths.delete(actualKey); button.setAttribute('aria-expanded', String(!collapsed)); })); }
-		function renderDistributions() { const query = document.getElementById('distributionSearch').value.toLowerCase().trim(); const status = document.getElementById('distributionStatusFilter').value; const filtered = [...state.distributions].sort((first, second) => (distributionDate(second) || 0) - (distributionDate(first) || 0)).filter(item => { const haystack = `${item.number} ${item.date} ${item.subject} ${item.recipient} ${item.status}`.toLowerCase(); return (!query || haystack.includes(query)) && (status === 'all' || item.status === status); }); const statusFilter = document.getElementById('distributionStatusFilter'); const statuses = [...new Set(state.distributions.map(item => item.status).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id')); const current = statusFilter.value; statusFilter.innerHTML = '<option value="all">Semua status</option>' + statuses.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(''); statusFilter.value = statuses.includes(current) ? current : 'all'; const rowsElement = document.getElementById('distributionRows'); rowsElement.innerHTML = filtered.length ? distributionRows(filtered) : '<tr><td colspan="6" class="distribution-empty">Belum ada distribusi yang sesuai.</td></tr>'; }
+		function renderDistributions() { const query = document.getElementById('distributionSearch').value.toLowerCase().trim(); const status = document.getElementById('distributionStatusFilter').value; const filtered = [...state.distributions].sort((first, second) => (distributionDate(second) || 0) - (distributionDate(first) || 0)).filter(item => { const haystack = `${item.number} ${item.date} ${item.subject} ${item.recipient} ${item.unitRecipient} ${item.recipientName} ${item.status}`.toLowerCase(); return (!query || haystack.includes(query)) && (status === 'all' || item.status === status); }); const statusFilter = document.getElementById('distributionStatusFilter'); const statuses = [...new Set(state.distributions.map(item => item.status).filter(Boolean))].sort((first, second) => first.localeCompare(second, 'id')); const current = statusFilter.value; statusFilter.innerHTML = '<option value="all">Semua status</option>' + statuses.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join(''); statusFilter.value = statuses.includes(current) ? current : 'all'; const rowsElement = document.getElementById('distributionRows'); rowsElement.innerHTML = filtered.length ? distributionRows(filtered) : '<tr><td colspan="7" class="distribution-empty">Belum ada distribusi yang sesuai.</td></tr>'; }
 		function latestMonthDistributionItems() { const active = [...state.distributions].filter(isActiveDistribution).sort(compareDistributionLatest); if (!active.length) return []; const newest = distributionDate(active[0]); const key = newest ? `${newest.getFullYear()}-${String(newest.getMonth() + 1).padStart(2, '0')}` : 'unknown'; return active.filter(item => { const date = distributionDate(item); return (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : 'unknown') === key; }).slice(0, 10); }
 		function renderLatestDistributionFeed(targetId, collapsedMonths, emptyMessage) { const latest = latestMonthDistributionItems(); const target = document.getElementById(targetId); if (!latest.length) { target.innerHTML = `<div class="distribution-empty">${emptyMessage}</div>`; return; } const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']; const date = distributionDate(latest[0]); const key = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : 'unknown'; const title = key === 'unknown' ? 'Tanggal belum tersedia' : `${monthNames[date.getMonth()]} ${date.getFullYear()}`; const rows = latest.map((item, index) => `<tr><td>${index + 1}</td><td><strong>${escapeHtml(item.number || '-')}</strong></td><td>${escapeHtml(item.unitRecipient || '-')}</td><td>${escapeHtml(item.recipientName || '-')}</td><td>${escapeHtml(item.position || '-')}</td><td>${escapeHtml(item.date || '-')}</td></tr>`).join(''); const collapsed = collapsedMonths.has(key); target.innerHTML = `<section class="distribution-month${collapsed ? ' is-collapsed' : ''}" data-month="${key}"><button class="distribution-month-toggle" type="button" aria-expanded="${!collapsed}"><span><span class="chevron">▾</span>${title}</span><span>${latest.length} surat terbaru</span></button><div class="distribution-month-content"><table class="latest-distribution-table"><thead><tr><th>No.</th><th>Nomor Surat</th><th>Unit Penerima</th><th>Nama Penerima</th><th>Jabatan</th><th>Tanggal Terima</th></tr></thead><tbody>${rows}</tbody></table></div></section>`; target.querySelector('.distribution-month-toggle').addEventListener('click', event => { const group = event.currentTarget.closest('.distribution-month'); const isCollapsed = group.classList.toggle('is-collapsed'); if (isCollapsed) collapsedMonths.add(key); else collapsedMonths.delete(key); event.currentTarget.setAttribute('aria-expanded', String(!isCollapsed)); }); }
 		function renderLatestDistribution() { renderLatestDistributionFeed('latestDistributionRows', state.collapsedDistributionMonths, 'Belum ada surat distribusi aktif dari Spreadsheet.'); }
@@ -2285,7 +2391,7 @@
 							<div class="letter">
 								<div class="letter-icon ${iconClass}">${iconType}</div>
 								<div>
-									<strong class="letter-subject-link" data-action="print" data-num="${escapeHtml(item.number)}" title="Klik untuk Cetak / Lihat Tanda Terima">${escapeHtml(item.subject)}</strong>
+									<strong class="letter-subject-link" data-action="print" ${sourceDataAttributes(item)} title="Klik untuk Cetak / Lihat Tanda Terima">${escapeHtml(item.subject)}</strong>
 									<small>${escapeHtml(item.number)} · ${escapeHtml(partyInfo)}</small>
 								</div>
 							</div>
@@ -2295,9 +2401,10 @@
 						<td><span class="badge ${normalizedStatus}">${escapeHtml(statusLabel[normalizedStatus])}</span></td>
 						<td style="text-align:right;">
 							<div class="letter-row-actions">
-								${canPrint ? `<button type="button" class="letter-action-btn print-btn" data-action="print" data-num="${escapeHtml(item.number)}" title="Cetak Ulang Tanda Terima (Model 2 Sisi)"><span>🖨️</span><span class="btn-text">Cetak</span></button>` : ''}
-								${canEdit ? `<button type="button" class="letter-action-btn edit-btn" data-action="edit" data-num="${escapeHtml(item.number)}" title="Edit Data Surat"><span>✏️</span><span class="btn-text">Edit</span></button>` : ''}
-								${canDelete ? `<button type="button" class="letter-action-btn delete-btn" data-action="delete" data-num="${escapeHtml(item.number)}" title="Hapus Surat"><span>🗑️</span><span class="btn-text">Hapus</span></button>` : ''}
+								${canPrint ? `<button type="button" class="letter-action-btn print-btn" data-action="print" ${sourceDataAttributes(item)} title="Cetak Ulang Tanda Terima (Model 2 Sisi)"><span>🖨️</span><span class="btn-text">Cetak</span></button>` : ''}
+								${canEdit ? `<button type="button" class="letter-action-btn edit-btn" data-action="edit" ${sourceDataAttributes(item)} title="Edit Data Surat"><span>✏️</span><span class="btn-text">Edit</span></button>` : ''}
+								${canEdit && item.status === 'archived' ? `<button type="button" class="letter-action-btn" data-action="republish" ${sourceDataAttributes(item)} title="Publikasikan ulang surat">Publikasikan ulang</button>` : ''}
+								${canDelete ? `<button type="button" class="letter-action-btn delete-btn" data-action="delete" ${sourceDataAttributes(item)} title="Hapus Surat"><span>🗑️</span><span class="btn-text">Hapus</span></button>` : ''}
 							</div>
 						</td>
 					</tr>`;
@@ -2311,17 +2418,32 @@
 			const actionEl = event.target.closest('[data-action]');
 			if (!actionEl) return;
 			const action = actionEl.dataset.action;
-			const num = actionEl.dataset.num;
-			if (!num) return;
+			const identity = { number: actionEl.dataset.num, type: actionEl.dataset.type, sourceSheet: actionEl.dataset.sourceSheet, sourceRow: Number(actionEl.dataset.sourceRow) };
+			if (!identity.number) return;
 
 			if (action === 'print') {
-				openReceiptModal(num);
+				openReceiptModal(identity);
 			} else if (action === 'edit') {
-				openEditLetterModal(num);
+				openEditLetterModal(identity);
 			} else if (action === 'delete') {
-				openDeleteLetterModal(num);
+				openDeleteLetterModal(identity);
+			} else if (action === 'republish') {
+				republishLetter(identity);
 			}
 		});
+		async function republishLetter(identity) {
+			const letter = findLetterByIdentity(identity);
+			if (!letter) return showToast('Data surat tidak ditemukan.');
+			const admin = getCurrentAdmin();
+			if (!admin.canEditAny && ((admin.id === 'admin_incoming' && letter.type !== 'in') || (admin.id === 'admin_outgoing' && letter.type !== 'out'))) return showToast('Akun Anda tidak memiliki izin untuk mempublikasikan ulang surat ini.');
+			if (admin.id === 'admin_distribution') return showToast('Admin Distribusi hanya dapat mengelola data distribusi.');
+			const saved = await persistSheetMutation('republishLetter', letter, record => {
+				const match = (record.data || []).map(normalizeLetter).find(item => sameSourceRow(item, letter));
+				return Boolean(match && match.status !== 'archived');
+			});
+			if (!saved) return showToast('Publikasi ulang belum terverifikasi di Spreadsheet. Pastikan Apps Script sudah diperbarui lalu coba kembali.');
+			showToast(`Surat "${letter.number}" berhasil dipublikasikan ulang.`);
+		}
 
 		function parseDateToInput(dateValue) {
 			const d = reportDate({ date: dateValue });
@@ -2336,8 +2458,8 @@
 		   MODAL EDIT DATA SURAT (SURAT MASUK & KELUAR)
 		   ======================================================== */
 		const editLetterModalWrap = document.getElementById('editLetterModalWrap');
-		function openEditLetterModal(number) {
-			const letter = state.letters.find(l => l.number === number);
+		function openEditLetterModal(identity) {
+			const letter = findLetterByIdentity(typeof identity === 'string' ? { number: identity, type: '' } : identity);
 			if (!letter) return showToast('Data surat tidak ditemukan.');
 
 			const admin = getCurrentAdmin();
@@ -2354,6 +2476,8 @@
 			document.getElementById('editLetterOriginalNumber').value = letter.number;
 			document.getElementById('editLetterOriginalType').value = letter.type;
 			document.getElementById('editLetterId').value = letter.id || '';
+			document.getElementById('editLetterSourceSheet').value = letter.sourceSheet || '';
+			document.getElementById('editLetterSourceRow').value = letter.sourceRow || '';
 			document.getElementById('editLetterNumberInput').value = letter.number;
 			document.getElementById('editLetterDateInput').value = parseDateToInput(letter.date);
 			document.getElementById('editLetterSubjectInput').value = letter.subject;
@@ -2394,17 +2518,30 @@
 		});
 
 		document.getElementById('editModalPrintReceiptBtn')?.addEventListener('click', () => {
-			const num = document.getElementById('editLetterNumberInput')?.value || document.getElementById('editLetterOriginalNumber')?.value;
-			if (num) {
+			const identity = {
+				number: document.getElementById('editLetterOriginalNumber').value,
+				type: document.getElementById('editLetterOriginalType').value,
+				sourceSheet: document.getElementById('editLetterSourceSheet').value,
+				sourceRow: Number(document.getElementById('editLetterSourceRow').value)
+			};
+			const letter = findLetterByIdentity(identity);
+			if (letter) {
 				closeEditLetterModal();
-				openReceiptModal(num);
+				openReceiptModal(letter);
 			}
 		});
 
 		document.getElementById('editLetterForm')?.addEventListener('submit', async event => {
 			event.preventDefault();
-			const origNum = document.getElementById('editLetterOriginalNumber').value;
-			const letterIndex = state.letters.findIndex(l => l.number === origNum);
+			const identity = {
+				number: document.getElementById('editLetterOriginalNumber').value,
+				type: document.getElementById('editLetterOriginalType').value,
+				sourceSheet: document.getElementById('editLetterSourceSheet').value,
+				sourceRow: Number(document.getElementById('editLetterSourceRow').value)
+			};
+			const currentLetter = findLetterByIdentity(identity);
+			const letterIndex = currentLetter ? state.letters.indexOf(currentLetter) : -1;
+			const origNum = identity.number;
 			if (letterIndex < 0) return showToast('Surat tidak ditemukan untuk diperbarui.');
 
 			const num = document.getElementById('editLetterNumberInput').value.trim();
@@ -2421,7 +2558,7 @@
 			const formattedDate = Number.isNaN(dateObj.getTime()) ? state.letters[letterIndex].date : dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
 			const updatedLetter = {
-				...state.letters[letterIndex],
+				...currentLetter,
 				id: id || state.letters[letterIndex].id,
 				originalNumber: origNum,
 				number: num,
@@ -2434,32 +2571,24 @@
 				notes
 			};
 
-			state.letters[letterIndex] = updatedLetter;
+			const saved = await persistSheetMutation('updateLetter', updatedLetter, record => {
+				const refreshed = (record.data || []).map(normalizeLetter);
+				const match = refreshed.find(item => sameSourceRow(item, currentLetter));
+				return Boolean(match && match.number === num && match.subject === subject && match.status === status);
+			});
+			if (!saved) return showToast('Perubahan belum terverifikasi di Spreadsheet. Pastikan Apps Script sudah diperbarui dan muat ulang data.');
 			closeEditLetterModal();
-			renderLetters();
-			renderArchive();
-			renderReport();
-			updateStats();
-
-			if (state.letters.length || state.distributions.length) {
-				localStorage.setItem('suratika_letters_snapshot', JSON.stringify({ letters: state.letters, distributions: state.distributions, senderNames: state.senderNames, recipientNames: state.recipientNames }));
-			}
-
-			showToast('Perubahan surat berhasil disimpan.', '🖨️ Cetak Tanda Terima', () => openReceiptModal(updatedLetter.number));
-
-			// Sync to backend servers
-			syncToAppsScript({ action: 'updateLetter', data: updatedLetter });
-			syncToCloudflare({ action: 'updateLetter', data: updatedLetter });
+			showToast('Perubahan surat berhasil diverifikasi di Spreadsheet.', '🖨️ Cetak Tanda Terima', () => openReceiptModal(findLetterByIdentity({ ...currentLetter, number: num }) || updatedLetter));
 		});
 
 		/* ========================================================
 		   MODAL HAPUS DATA SURAT (KONFIRMASI & EKSEKUSI)
 		   ======================================================== */
 		const deleteLetterModalWrap = document.getElementById('deleteLetterModalWrap');
-		let pendingDeleteNumber = '';
+		let pendingDeleteLetter = null;
 
-		function openDeleteLetterModal(number) {
-			const letter = state.letters.find(l => l.number === number);
+		function openDeleteLetterModal(identity) {
+			const letter = findLetterByIdentity(typeof identity === 'string' ? { number: identity, type: '' } : identity);
 			if (!letter) return showToast('Data surat tidak ditemukan.');
 
 			const admin = getCurrentAdmin();
@@ -2473,7 +2602,7 @@
 				return showToast('Akun Admin Distribusi tidak memiliki izin menghapus surat agenda.');
 			}
 
-			pendingDeleteNumber = number;
+			pendingDeleteLetter = letter;
 			document.getElementById('deleteLetterNumberText').textContent = letter.number;
 			document.getElementById('deleteLetterSubjectText').textContent = letter.subject;
 			document.getElementById('deleteLetterPartyText').textContent = letter.type === 'in' ? `Dari: ${letter.sender}` : `Tujuan: ${letter.recipient || '-'}`;
@@ -2493,7 +2622,7 @@
 				deleteLetterModalWrap.style.display = 'none';
 				deleteLetterModalWrap.classList.remove('is-closing');
 			}, 190);
-			pendingDeleteNumber = '';
+			pendingDeleteLetter = null;
 		}
 
 		['closeDeleteLetterModal', 'cancelDeleteLetterModal'].forEach(id => {
@@ -2504,26 +2633,14 @@
 		});
 
 		document.getElementById('confirmDeleteLetterBtn')?.addEventListener('click', async () => {
-			if (!pendingDeleteNumber) return;
-			const targetNum = pendingDeleteNumber;
-			const targetLetter = state.letters.find(l => l.number === targetNum);
-
-			state.letters = state.letters.filter(l => l.number !== targetNum);
+			if (!pendingDeleteLetter) return;
+			const targetLetter = pendingDeleteLetter;
+			const saved = await persistSheetMutation('deleteLetter', targetLetter, record => {
+				return !(record.data || []).map(normalizeLetter).some(item => sameSourceRow(item, targetLetter) && item.number === targetLetter.number);
+			});
+			if (!saved) return showToast('Penghapusan belum terverifikasi di Spreadsheet. Pastikan Apps Script sudah diperbarui dan muat ulang data.');
 			closeDeleteLetterModal();
-			renderLetters();
-			renderArchive();
-			renderReport();
-			updateStats();
-
-			if (state.letters.length || state.distributions.length) {
-				localStorage.setItem('suratika_letters_snapshot', JSON.stringify({ letters: state.letters, distributions: state.distributions, senderNames: state.senderNames, recipientNames: state.recipientNames }));
-			}
-
-			showToast(`Data surat "${targetNum}" berhasil dihapus.`);
-
-			// Sync delete to backend servers
-			syncToAppsScript({ action: 'deleteLetter', data: { number: targetNum, id: targetLetter?.id } });
-			syncToCloudflare({ action: 'deleteLetter', data: { number: targetNum, id: targetLetter?.id } });
+			showToast(`Data surat "${targetLetter.number}" berhasil dihapus dari Spreadsheet.`);
 		});
 
 		/* ========================================================
@@ -2535,8 +2652,10 @@
 		let currentReceiptLetter = null;
 		let currentReceiptMode = 'dual'; // 'dual' atau 'duplex'
 
-		function openReceiptModal(number) {
-			const letter = state.letters.find(l => l.number === number);
+		function openReceiptModal(identity) {
+			const letter = typeof identity === 'object'
+				? (identity.sourceRow ? findLetterByIdentity(identity) || identity : identity)
+				: findLetterByIdentity({ number: identity, type: '' });
 			if (!letter) return showToast('Data surat tidak ditemukan.');
 			currentReceiptLetter = letter;
 			renderReceiptModal(letter, currentReceiptMode);
@@ -3205,53 +3324,6 @@
 		function applyHeroImages(sources) { const urls = [...new Set((sources || []).filter(Boolean))]; if (heroSliderTimer) clearInterval(heroSliderTimer); heroSliderUrls = urls; heroSliderIndex = 0; const hero = document.getElementById('heroArt'); const dots = document.getElementById('heroSliderDots'); dots.innerHTML = urls.map((url, index) => `<i class="${index === 0 ? 'active' : ''}" data-slide="${index}"></i>`).join(''); if (!urls.length) { hero.classList.remove('has-image'); return; } hero.classList.add('has-image'); const showSlide = index => { heroSliderIndex = index; const candidates = heroImageCandidates(urls[index]); hero.style.backgroundImage = `url("${candidates[0]}")`; const probe = new Image(); probe.onload = () => { hero.style.backgroundImage = `url("${candidates[0]}")`; }; probe.onerror = () => { if (candidates[1]) hero.style.backgroundImage = `url("${candidates[1]}")`; }; probe.src = candidates[0]; dots.querySelectorAll('i').forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === index)); }; showSlide(0); dots.querySelectorAll('i').forEach(dot => dot.addEventListener('click', () => showSlide(Number(dot.dataset.slide)))); if (urls.length > 1) heroSliderTimer = setInterval(() => showSlide((heroSliderIndex + 1) % urls.length), 4500); }
 		async function loadHeroSliderFromServer() { try { const response = await fetch(`${APP_SCRIPT_URL}?api=1&hero=1&t=${Date.now()}`); const result = await readJsonResponse(response, 'Apps Script'); const urls = result.heroImageUrls || (result.heroImageUrl ? [result.heroImageUrl] : []); if (urls.length) { localStorage.setItem('suratika_hero_images', JSON.stringify(urls)); localStorage.setItem('suratika_hero_image', urls[0]); applyHeroImages(urls); } } catch (error) { console.warn('Hero slider sync failed', error); } }
 		function applyFooterInfo(content) { const value = String(content || '').trim() || 'Informasi layanan administrasi surat UIN Ar-Raniry Banda Aceh.'; document.getElementById('publicFooterInfo').textContent = value; document.getElementById('publicFooterYear').textContent = new Date().getFullYear(); const input = document.getElementById('footerInfoInput'); if (input) input.value = value; }
-		function setupSupabaseMirrorSettings() {
-			const grid = document.querySelector('#settingsPanel .settings-grid');
-			if (!grid || document.getElementById('supabaseMirrorSettingsCard')) return;
-
-			const card = document.createElement('div');
-			card.className = 'settings-card';
-			card.id = 'supabaseMirrorSettingsCard';
-			card.innerHTML = '<h3>Mirror Supabase</h3><p>Google Spreadsheet tetap menjadi sumber utama. Jalankan SQL dari supabase/schema.sql di Supabase, lalu gunakan sinkronisasi manual untuk menyalin daftar surat terbaru.</p><div class="connection" id="supabaseMirrorStatus"><i></i> Memeriksa konfigurasi server</div><button class="primary-btn" id="syncSupabaseMirrorBtn" style="margin-top:12px">Sinkronkan Spreadsheet ke Supabase</button>';
-			grid.appendChild(card);
-
-			const status = document.getElementById('supabaseMirrorStatus');
-			const syncButton = document.getElementById('syncSupabaseMirrorBtn');
-			fetch('/api/supabase-sync', { cache: 'no-store' })
-				.then(response => readJsonResponse(response, 'API Supabase'))
-				.then(result => {
-					status.classList.toggle('ok', result.configured === true);
-					status.innerHTML = `<i></i> ${result.configured ? 'Konfigurasi server tersedia' : 'Atur environment variable Vercel'}`;
-				})
-				.catch(error => {
-					console.error('Status Supabase tidak dapat diperiksa:', error);
-					status.textContent = 'Status Supabase tidak dapat diperiksa';
-				});
-
-			syncButton.addEventListener('click', async () => {
-				syncButton.disabled = true;
-				syncButton.textContent = 'Menyinkronkan...';
-				try {
-					const response = await fetch('/api/supabase-sync', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: '{}'
-					});
-					const result = await readJsonResponse(response, 'API Supabase');
-					if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
-					status.classList.add('ok');
-					status.innerHTML = `<i></i> ${result.syncedRows} surat tersinkron`;
-					showToast(`${result.syncedRows} surat berhasil disinkronkan ke Supabase.`);
-				} catch (error) {
-					console.error('Sinkronisasi Supabase gagal:', error);
-					showToast(error.message || 'Sinkronisasi Supabase gagal.');
-				} finally {
-					syncButton.disabled = false;
-					syncButton.textContent = 'Sinkronkan Spreadsheet ke Supabase';
-				}
-			});
-		}
-		setupSupabaseMirrorSettings();
 		function setupFooterSettings() { const grid = document.querySelector('#settingsPanel .settings-grid'); if (!grid || document.getElementById('footerSettingsCard')) return; const card = document.createElement('div'); card.className = 'settings-card'; card.id = 'footerSettingsCard'; card.innerHTML = '<h3>Informasi footer Beranda Publik</h3><p>Isi informasi yang ditampilkan pada bagian bawah beranda publik.</p><textarea id="footerInfoInput" maxlength="500" placeholder="Tuliskan informasi layanan atau kontak..."></textarea><button class="primary-btn" id="saveFooterInfo" style="margin-top:12px">Simpan informasi</button>'; grid.appendChild(card); const saved = localStorage.getItem('suratika_footer_info'); if (saved) applyFooterInfo(saved); document.getElementById('saveFooterInfo').addEventListener('click', async () => { const content = document.getElementById('footerInfoInput').value.trim(); applyFooterInfo(content); localStorage.setItem('suratika_footer_info', content); const savedToServer = await syncToAppsScript({ action: 'saveFooterInfo', data: { content } }); showToast(savedToServer ? 'Informasi footer berhasil disimpan.' : 'Informasi tampil sementara. Penyimpanan server gagal.'); }); }
 		function updatePublicDistributionTotal() { const summary = document.getElementById('publicDistributionSummary'); if (!summary) return; let totalCard = document.getElementById('publicDistributionTotal'); if (!totalCard) { totalCard = document.createElement('div'); totalCard.id = 'publicDistributionTotal'; totalCard.className = 'public-distribution-summary-item total'; summary.prepend(totalCard); } const total = state.distributions.length; totalCard.innerHTML = `<strong>${total}</strong><span>Total seluruh distribusi</span>`; }
 		function setupPublicDistributionTotal() { const target = document.getElementById('publicDistributionRows'); if (!target) return; const observer = new MutationObserver(updatePublicDistributionTotal); observer.observe(target, { childList: true, subtree: true }); updatePublicDistributionTotal(); }
@@ -3635,6 +3707,11 @@
 		['gradientColorOne', 'gradientColorTwo', 'gradientDirection'].forEach(id => document.getElementById(id).addEventListener('input', () => applyPublicGradient(document.getElementById('gradientColorOne').value, document.getElementById('gradientColorTwo').value, document.getElementById('gradientDirection').value)));
 		['searchInput', 'typeFilter', 'statusFilter', 'letterLimitFilter'].forEach(id => document.getElementById(id).addEventListener('input', renderLetters));
 		document.getElementById('distributionSearch').addEventListener('input', renderDistributions); document.getElementById('distributionStatusFilter').addEventListener('change', renderDistributions);
+		document.getElementById('distributionRows')?.addEventListener('click', event => {
+			const actionElement = event.target.closest('[data-distribution-action]');
+			if (!actionElement) return;
+			handleDistributionAction(actionElement.dataset.distributionAction, distributionIdentityFromElement(actionElement));
+		});
 		document.getElementById('archiveSearch').addEventListener('input', renderArchive); document.getElementById('archiveTypeFilter').addEventListener('change', renderArchive); document.getElementById('archiveYearFilter').addEventListener('change', renderArchive);
 		document.getElementById('reportDataType').addEventListener('change', renderReport); document.getElementById('reportPeriod').addEventListener('change', renderReport); document.getElementById('reportMonth').addEventListener('change', renderReport); document.getElementById('reportSemester').addEventListener('change', renderReport); document.getElementById('reportYear').addEventListener('input', renderReport); document.getElementById('printReport').addEventListener('click', () => { renderReport(); window.print(); });
 		document.getElementById('publicMonthFilter').addEventListener('change', renderPublicArchive);

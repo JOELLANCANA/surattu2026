@@ -53,23 +53,79 @@ function doGet(event) {
 
 function getDistributionData_() {
   if (!CONFIG.distributionSpreadsheetId) return [];
+  const sheet = getDistributionSheet_();
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  const values = sheet.getDataRange().getDisplayValues();
+  const headers = values.shift() || [];
+  return values.flatMap((row, index) => {
+    if (!row.some(value => String(value).trim())) return [];
+    const item = headers.reduce((record, header, column) => {
+      record[header || `column${column + 1}`] = row[column] || '';
+      return record;
+    }, {});
+    item.sourceSheet = sheet.getName();
+    item.sourceRow = index + 2;
+    return [item];
+  });
+}
+
+function getDistributionSheet_() {
+  if (!CONFIG.distributionSpreadsheetId) throw new Error('DISTRIBUTION_SPREADSHEET_ID belum dikonfigurasi.');
   const spreadsheet = SpreadsheetApp.openById(CONFIG.distributionSpreadsheetId);
   const configuredName = String(CONFIG.distributionSheetName || '').trim();
   let sheet = spreadsheet.getSheetByName(CONFIG.distributionSheetName);
   if (!sheet) {
     const matches = spreadsheet.getSheets().filter(candidate => candidate.getName().trim() === configuredName);
-    if (matches.length > 1) {
-      throw new Error(`Nama sheet distribusi "${configuredName}" cocok dengan lebih dari satu tab.`);
-    }
+    if (matches.length > 1) throw new Error(`Nama sheet distribusi "${configuredName}" cocok dengan lebih dari satu tab.`);
     sheet = matches[0] || null;
   }
-  if (!sheet || sheet.getLastRow() < 2) return [];
-  const values = sheet.getDataRange().getDisplayValues();
-  const headers = values.shift() || [];
-  return values.filter(row => row.some(value => String(value).trim())).map(row => headers.reduce((item, header, index) => {
-    item[header || `column${index + 1}`] = row[index] || '';
-    return item;
-  }, {}));
+  if (!sheet) throw new Error(`Sheet distribusi "${configuredName}" tidak ditemukan.`);
+  return sheet;
+}
+
+function normalizeHeader_(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function findHeaderColumn_(headers, aliases) {
+  const candidates = aliases.map(normalizeHeader_);
+  return headers.findIndex(header => candidates.includes(normalizeHeader_(header))) + 1;
+}
+
+function writeHeaderFields_(sheet, row, headers, fields) {
+  fields.forEach(field => {
+    if (field.value === undefined) return;
+    const column = findHeaderColumn_(headers, field.names);
+    if (column) sheet.getRange(row, column).setValue(field.value === null ? '' : field.value);
+  });
+}
+
+function findMutationRow_(sheet, data, expectedNumber, numberColumn) {
+  if (!numberColumn || !expectedNumber) return 0;
+  const sourceSheet = String(data.sourceSheet || '').trim();
+  if (sourceSheet && sourceSheet !== sheet.getName()) return 0;
+  const sourceRow = Number(data.sourceRow);
+  if (Number.isInteger(sourceRow) && sourceRow >= 2 && sourceRow <= sheet.getLastRow()) {
+    return String(sheet.getRange(sourceRow, numberColumn).getDisplayValue()).trim() === expectedNumber ? sourceRow : 0;
+  }
+  const matches = [];
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  sheet.getRange(2, numberColumn, lastRow - 1, 1).getDisplayValues().forEach((values, index) => {
+    if (String(values[0]).trim() === expectedNumber) matches.push(index + 2);
+  });
+  return matches.length === 1 ? matches[0] : 0;
+}
+
+function getExistingLetterSheet_(type, sourceSheet) {
+  const normalizedType = String(type || '').toLowerCase();
+  if (!['in', 'out'].includes(normalizedType)) throw new Error('Jenis surat tidak valid.');
+  const expectedName = normalizedType === 'out' ? CONFIG.outgoingSheetName : CONFIG.incomingSheetName;
+  if (sourceSheet && String(sourceSheet).trim() !== expectedName) throw new Error('Sheet sumber surat tidak sesuai dengan jenis surat.');
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.spreadsheetId);
+  const sheet = spreadsheet.getSheetByName(expectedName);
+  if (!sheet) throw new Error(`Sheet "${expectedName}" tidak ditemukan.`);
+  return sheet;
 }
 
 function doPost(event) {
@@ -129,42 +185,69 @@ function doPost(event) {
       const trigger = installIntegritySyncTrigger_();
       return json_({ ok: true, trigger });
     }
-    if (body.action === 'updateLetter') {
+    if (body.action === 'updateLetter' || body.action === 'republishLetter') {
       const data = body.data || {};
-      const origNum = String(data.originalNumber || data.number || '').trim();
-      ['in', 'out'].forEach(type => {
-        const sheet = getSheet_(type);
-        const values = sheet.getDataRange().getDisplayValues();
-        for (let i = 1; i < values.length; i++) {
-          if (String(values[i][1]).trim() === origNum) {
-            sheet.getRange(i + 1, 2).setValue(data.number || values[i][1]);
-            sheet.getRange(i + 1, 3).setValue(data.subject || values[i][2]);
-            sheet.getRange(i + 1, 4).setValue(data.sender || values[i][3]);
-            sheet.getRange(i + 1, 6).setValue(data.date || values[i][5]);
-            sheet.getRange(i + 1, 7).setValue(data.status || values[i][6]);
-            if (data.recipient) sheet.getRange(i + 1, 9).setValue(data.recipient);
-            break;
-          }
-        }
-      });
+      const originalNumber = String(data.originalNumber || data.number || '').trim();
+      const type = data.originalType || data.type;
+      const sheet = getExistingLetterSheet_(type, data.sourceSheet);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+      const numberColumn = findHeaderColumn_(headers, ['number', 'nomor', 'nomor surat']);
+      const row = findMutationRow_(sheet, data, originalNumber, numberColumn);
+      if (!row) return json_({ ok: false, error: 'Surat tidak ditemukan atau baris sumber sudah berubah. Muat ulang data lalu coba kembali.' });
+      if (body.action === 'republishLetter') {
+        writeHeaderFields_(sheet, row, headers, [{ names: ['status', 'state'], value: 'received' }]);
+      } else {
+        writeHeaderFields_(sheet, row, headers, [
+          { names: ['number', 'nomor', 'nomor surat'], value: data.number },
+          { names: ['subject', 'perihal', 'judul'], value: data.subject },
+          { names: ['sender', 'pengirim', 'asal'], value: data.sender },
+          { names: ['recipient', 'tujuan', 'ditujukan', 'penerima'], value: data.recipient },
+          { names: ['date', 'tanggal'], value: data.date },
+          { names: ['status', 'state'], value: data.status },
+          { names: ['notes', 'catatan', 'keterangan', 'disposisi'], value: data.notes }
+        ]);
+      }
       CacheService.getScriptCache().remove('suratika_letters_v1');
-      return json_({ ok: true });
+      return json_({ ok: true, sourceSheet: sheet.getName(), sourceRow: row });
     }
     if (body.action === 'deleteLetter') {
       const data = body.data || {};
-      const targetNum = String(data.number || '').trim();
-      ['in', 'out'].forEach(type => {
-        const sheet = getSheet_(type);
-        const values = sheet.getDataRange().getDisplayValues();
-        for (let i = values.length - 1; i >= 1; i--) {
-          if (String(values[i][1]).trim() === targetNum) {
-            sheet.deleteRow(i + 1);
-            break;
-          }
-        }
-      });
+      const type = data.type || data.originalType;
+      const sheet = getExistingLetterSheet_(type, data.sourceSheet);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+      const numberColumn = findHeaderColumn_(headers, ['number', 'nomor', 'nomor surat']);
+      const row = findMutationRow_(sheet, data, String(data.number || '').trim(), numberColumn);
+      if (!row) return json_({ ok: false, error: 'Surat tidak ditemukan atau baris sumber sudah berubah. Muat ulang data lalu coba kembali.' });
+      sheet.deleteRow(row);
       CacheService.getScriptCache().remove('suratika_letters_v1');
-      return json_({ ok: true });
+      return json_({ ok: true, sourceSheet: sheet.getName() });
+    }
+    if (['updateDistribution', 'deleteDistribution', 'republishDistribution'].includes(body.action)) {
+      const data = body.data || {};
+      const sheet = getDistributionSheet_();
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+      const numberColumn = findHeaderColumn_(headers, ['number', 'nomor', 'nomor surat']);
+      const row = findMutationRow_(sheet, data, String(data.originalNumber || data.number || '').trim(), numberColumn);
+      if (!row) return json_({ ok: false, error: 'Data distribusi tidak ditemukan atau baris sumber sudah berubah. Muat ulang data lalu coba kembali.' });
+      if (body.action === 'deleteDistribution') {
+        sheet.deleteRow(row);
+      } else {
+        const fields = body.action === 'republishDistribution'
+          ? [{ names: ['status', 'keterangan', 'state', 'aktif'], value: 'Aktif' }]
+          : [
+            { names: ['number', 'nomor', 'nomor surat'], value: data.number },
+            { names: ['date', 'tanggal', 'tanggal distribusi', 'tanggal terima', 'tgl'], value: data.date },
+            { names: ['subject', 'perihal', 'judul', 'uraian'], value: data.subject },
+            { names: ['unitrecipient', 'unitpenerima', 'penerimaunit', 'unit', 'bagian', 'instansi'], value: data.unitRecipient },
+            { names: ['recipientname', 'namapenerima', 'penerimanama', 'nama penerima'], value: data.recipientName },
+            { names: ['position', 'jabatan', 'pekerjaan'], value: data.position },
+            { names: ['recipient', 'penerima', 'tujuan', 'didistribusikankepada', 'disposisi'], value: data.recipient },
+            { names: ['status', 'keterangan', 'state', 'aktif'], value: data.status }
+          ];
+        writeHeaderFields_(sheet, row, headers, fields);
+      }
+      CacheService.getScriptCache().remove('suratika_letters_v1');
+      return json_({ ok: true, sourceSheet: sheet.getName(), sourceRow: row });
     }
     if (body.action !== 'createLetter') {
       return json_({ ok: false, error: 'Action tidak dikenal.' });
